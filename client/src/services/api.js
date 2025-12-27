@@ -1,34 +1,44 @@
 import axios from 'axios';
 
-// Instance Axios Terpusat
 const api = axios.create({
-    baseURL: '/api', // Otomatis mengarah ke localhost:5000 via Proxy Vite
+    baseURL: '/api',
     headers: {
         'Content-Type': 'application/json',
     },
+    timeout: 10000, // 10s timeout for performance monitoring
 });
 
-// Interceptor Request: Pasang Token Otomatis
-// Setiap kali kirim data, cek apakah ada tiket (token) di saku (sessionStorage)
+// Request Interceptor: Secure Token Injection
 api.interceptors.request.use(
     (config) => {
-        const token = sessionStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        try {
+            const userStr = sessionStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                if (user.token) {
+                    config.headers.Authorization = `Bearer ${user.token}`;
+                }
+            }
+        } catch (error) {
+            console.error('Error parsing session data', error);
+            sessionStorage.clear();
         }
         return config;
     },
     (error) => Promise.reject(error)
 );
 
-// Interceptor Response: Handle Token Expired
+// Response Interceptor: Global Error Handling & Session Management
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        // Jika server bilang "401 Unauthorized" (Token Basi/Palsu)
+        // Security: Immediate logout on 401 (Unauthorized)
         if (error.response && error.response.status === 401) {
-            sessionStorage.clear(); // Hapus data sampah
-            window.location.href = '/login'; // Tendang ke login
+            sessionStorage.removeItem('user');
+            // Prevent redirect loops
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(error);
     }

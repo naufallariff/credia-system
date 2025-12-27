@@ -1,18 +1,38 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Layout from './components/Layout'; // Import Layout
+
+// Komponen Penjaga (Guard)
+const ProtectedRoute = ({ children }) => {
+  const userStr = sessionStorage.getItem('user');
+  if (!userStr) return <Navigate to="/login" replace />;
+
+  // WRAPPER: Bungkus halaman dengan Layout
+  return <Layout>{children}</Layout>;
+};
 
 function App() {
   return (
-    <Router>
+    <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
 
-        {/* Redirect default ke login jika belum ada session */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* Dashboard sekarang otomatis punya Sidebar & Header */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Nanti kita tambah route lain disini: /contracts, /clients */}
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 }
 

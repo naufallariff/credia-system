@@ -1,77 +1,130 @@
-import React from 'react';
-import { formatRupiah, formatDate } from '../../utils/format';
-import { Eye } from 'lucide-react';
+import React from "react";
+import { Eye, AlertCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 
-const StatusBadge = ({ status }) => {
-    const styles = {
-        ACTIVE: "bg-blue-100 text-blue-700 border-blue-200",
-        CLOSED: "bg-emerald-100 text-emerald-700 border-emerald-200", // Lunas
-        LATE: "bg-amber-100 text-amber-700 border-amber-200", // Telat biasa
-        OVERDUE: "bg-red-100 text-red-700 border-red-200", // Macet parah (kena denda)
-    };
-
-    // Default ke abu-abu jika status tidak dikenali
-    const className = styles[status] || "bg-slate-100 text-slate-700 border-slate-200";
-
-    return (
-        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${className}`}>
-            {status}
-        </span>
-    );
+const formatRupiah = (num) => {
+return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+}).format(num);
 };
 
-export const ContractTable = ({ data, onViewDetail }) => {
-    if (!data || data.length === 0) {
-        return <div className="p-8 text-center text-slate-500">Belum ada data kontrak.</div>;
-    }
-
+const ContractTable = ({ contracts = [], isLoading }) => {
+if (isLoading) {
     return (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
-            <table className="w-full text-sm text-left text-slate-600">
-                <thead className="bg-slate-50 text-slate-700 uppercase font-bold text-xs">
-                    <tr>
-                        <th className="px-6 py-3">No. Kontrak</th>
-                        <th className="px-6 py-3">Klien</th>
-                        <th className="px-6 py-3">Total Pinjaman</th>
-                        <th className="px-6 py-3 text-center">Tenor</th>
-                        <th className="px-6 py-3 text-center">Status</th>
-                        <th className="px-6 py-3 text-center">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {data.map((item, index) => (
-                        <tr
-                            key={item.contract_no}
-                            className={`border-b hover:bg-slate-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}
-                        >
-                            <td className="px-6 py-4 font-medium text-primary">
-                                {item.contract_no}
-                            </td>
-                            <td className="px-6 py-4">
-                                {item.client_name}
-                            </td>
-                            <td className="px-6 py-4 font-mono text-slate-700">
-                                {formatRupiah(item.otr_price)} {/* Asumsi menampilkan OTR dulu */}
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                                {item.duration_month} Bln
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                                <StatusBadge status={item.status} />
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                                <button
-                                    onClick={() => onViewDetail(item.contract_no)}
-                                    className="p-2 text-primary hover:bg-slate-200 rounded-full transition-all"
-                                    title="Lihat Detail"
-                                >
-                                    <Eye size={18} />
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+    <div className="w-full bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+        <div className="animate-pulse space-y-4">
+        <div className="h-4 bg-slate-100 rounded w-3/4"></div>
+        <div className="h-4 bg-slate-100 rounded w-1/2"></div>
+        <div className="h-4 bg-slate-100 rounded w-5/6"></div>
         </div>
+    </div>
     );
+}
+
+if (contracts.length === 0) {
+    return (
+    <div className="flex flex-col items-center justify-center p-12 bg-white rounded-xl border border-slate-200 border-dashed text-center">
+        <div className="p-3 bg-slate-50 rounded-full mb-4">
+        <AlertCircle className="text-slate-400" size={24} />
+        </div>
+        <h3 className="text-slate-900 font-medium">No Contracts Found</h3>
+        <p className="text-slate-500 text-sm mt-1">
+        There are no active contracts to display at this moment.
+        </p>
+    </div>
+    );
+}
+
+return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+        <thead>
+            <tr className="bg-slate-50 border-b border-slate-200">
+            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Contract No
+            </th>
+            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Client Name
+            </th>
+            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">
+                Loan Value
+            </th>
+            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">
+                Installment
+            </th>
+            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">
+                Status
+            </th>
+            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">
+                Action
+            </th>
+            </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+            {contracts.map((contract) => (
+            <tr
+                key={contract._id}
+                className="hover:bg-slate-50/80 transition-colors group"
+            >
+                <td className="px-6 py-4">
+                <span className="font-semibold text-credia-700 font-mono text-sm">
+                    {contract.contract_no}
+                </span>
+                </td>
+                <td className="px-6 py-4">
+                <div className="text-sm font-medium text-slate-900">
+                    {contract.client_name_snapshot}
+                </div>
+                </td>
+                <td className="px-6 py-4 text-right">
+                <div className="text-sm text-slate-600">
+                    {formatRupiah(contract.otr_price)}
+                </div>
+                </td>
+                <td className="px-6 py-4 text-right">
+                <div className="text-sm font-medium text-slate-800">
+                    {formatRupiah(contract.monthly_installment)}
+                </div>
+                </td>
+                <td className="px-6 py-4 text-center">
+                <span
+                    className={`
+                    inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border
+                    ${
+                    contract.status === "ACTIVE"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : ""
+                    }
+                    ${
+                    contract.status === "LATE"
+                        ? "bg-rose-50 text-rose-700 border-rose-200"
+                        : ""
+                    }
+                    ${
+                    contract.status === "CLOSED"
+                        ? "bg-slate-100 text-slate-600 border-slate-200"
+                        : ""
+                    }
+                `}
+                >
+                    {contract.status}
+                </span>
+                </td>
+                <td className="px-6 py-4 text-center">
+                <button className="text-slate-400 hover:text-credia-600 transition-colors p-1 rounded-md hover:bg-credia-50">
+                    <Eye size={18} />
+                </button>
+                </td>
+            </tr>
+            ))}
+        </tbody>
+        </table>
+    </div>
+    </div>
+);
 };
+
+export default ContractTable;

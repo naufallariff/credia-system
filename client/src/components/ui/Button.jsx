@@ -1,33 +1,36 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 
-export const Button = ({
+const Button = ({
     children,
-    isLoading,
     variant = 'primary',
+    isLoading = false,
     className = '',
+    disabled,
+    type = 'button',
     ...props
 }) => {
-    const baseStyles = "w-full font-medium py-2.5 px-4 rounded-lg transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center";
+
+    const baseStyles = "inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-60 disabled:cursor-not-allowed text-sm tracking-wide";
 
     const variants = {
-        primary: "bg-primary hover:bg-primary-hover text-white",
-        danger: "bg-danger hover:bg-red-600 text-white",
-        outline: "border border-slate-300 text-slate-700 hover:bg-slate-50"
+        primary: "bg-credia-600 hover:bg-credia-700 text-white focus:ring-credia-500 shadow-lg shadow-credia-600/20 border border-transparent",
+        secondary: "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus:ring-slate-200 shadow-sm",
+        danger: "bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 shadow-lg shadow-red-600/20",
+        ghost: "bg-transparent hover:bg-slate-100 text-slate-600 border border-transparent"
     };
 
     return (
         <button
+            type={type}
             className={`${baseStyles} ${variants[variant]} ${className}`}
-            disabled={isLoading || props.disabled}
+            disabled={disabled || isLoading}
             {...props}
         >
-            {isLoading ? (
-                <svg className="animate-spin h-5 w-5 mr-2 text-current" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-            ) : null}
+            {isLoading && <Loader2 size={16} className="animate-spin mr-2" />}
             {children}
         </button>
     );
 };
+
+export default Button;

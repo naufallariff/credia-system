@@ -6,6 +6,25 @@
 
 @layer base {
   body {
-    @apply bg-background text-slate-800 font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+    @apply bg-slate-50 text-slate-800 antialiased;
   }
+}
+
+/* Custom Scrollbar for Enterprise look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400;
 }
