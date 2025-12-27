@@ -1,0 +1,40 @@
+# version: '3.8'
+
+services:
+  # 1. Database Service
+  mongo:
+    build: ./database
+    container_name: credia_mongo_db
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: devadmin
+      MONGO_INITDB_ROOT_PASSWORD: rahasianaufal123
+    volumes:
+      - credia-data:/data/db
+    networks:
+      - credia-network
+  # 2. GUI Database (Mongo Express)
+  mongo-express:
+    image: mongo-express
+    container_name: credia_mongo_gui
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      # Koneksi internal antar container (host: mongo)
+      ME_CONFIG_MONGODB_URL: mongodb://devadmin:rahasianaufal123@mongo:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: devadmin
+      ME_CONFIG_BASICAUTH_PASSWORD: rahasianaufal123
+    depends_on:
+      - mongo
+    networks:
+      - credia-network
+
+# Definisi Volume & Network Baru
+volumes:
+  credia-data:
+
+networks:
+  credia-network:
+    driver: bridge
