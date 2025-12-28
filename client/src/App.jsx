@@ -1,28 +1,60 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/auth/Login';
-import Dashboard from './pages/Dashboard';
-import Contracts from './pages/Contracts';
-import Clients from './pages/Clients'; // Import
-import Layout from './components/Layout';
+import MainLayout from './components/layout/MainLayout';
+import ProtectedRoute from './components/layout/ProtectedRoute';
 
-const ProtectedRoute = ({ children }) => {
-  const userStr = sessionStorage.getItem('user');
-  if (!userStr) return <Navigate to="/login" replace />;
-  return <Layout>{children}</Layout>;
-};
+// Auth Pages
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import ChangeInitialPassword from './pages/auth/ChangeInitialPassword';
+
+// Admin Pages
+import ApprovalList from './pages/admin/ApprovalList';
+
+// Placeholder Pages (To avoid crash before development)
+const Dashboard = () => <div className="text-slate-700">Welcome to Credia Enterprise V3.0</div>;
+const NotFound = () => <div className="text-center mt-20 text-slate-500">Page Not Found</div>;
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Routes */}
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         
-        {/* Protected Routes */}
-        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/contracts" element={<ProtectedRoute><Contracts /></ProtectedRoute>} />
-        <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
-        
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Semi-Protected (Change Password Flow) */}
+        <Route 
+          path="/auth/change-initial-password" 
+          element={
+            // No MainLayout here, just the form
+            <ChangeInitialPassword />
+          } 
+        />
+
+        {/* Secured Routes with Layout */}
+        <Route path="/" element={
+          <ProtectedRoute>
+            <MainLayout>
+              {/* This is the default output for nested routes */}
+              <Dashboard /> 
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+
+        {/* ADMIN ROUTES */}
+        <Route 
+          path="/approvals" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
+              <MainLayout>
+                <ApprovalList />
+              </MainLayout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Fallback */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
