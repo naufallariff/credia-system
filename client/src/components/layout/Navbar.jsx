@@ -1,5 +1,6 @@
 import { Bell, Search } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import NotificationBell from '../features/notifications/NotificationBell'
 
 const Navbar = () => {
     const location = useLocation();
@@ -37,11 +38,8 @@ const Navbar = () => {
                 <div className="h-6 w-px bg-slate-200 mx-2"></div>
 
                 {/* Notification Bell */}
-                <button className="relative p-2 text-slate-500 hover:text-indigo-600 transition-colors rounded-full hover:bg-indigo-50">
-                    <Bell size={20} />
-                    {/* Notification Badge */}
-                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
-                </button>
+                <div className="h-6 w-px bg-slate-200 mx-2"></div>
+                <NotificationBell />
             </div>
         </header>
     );
