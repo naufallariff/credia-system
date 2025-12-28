@@ -100,7 +100,7 @@ const importData = async () => {
             username: 'client.andri',
             email: 'andri@gmail.com',
             password: 'UserPassword!23',
-            name: 'Andri Wicaksono',
+            name: 'Andri Sudirman',
             role: 'CLIENT',
             status: 'ACTIVE',
             created_by: adminFinance._id
