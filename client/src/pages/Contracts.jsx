@@ -3,16 +3,18 @@ import api from '../services/api';
 import ContractTable from '../components/ui/ContractTable';
 import Button from '../components/ui/Button';
 import CreateContractModal from '../components/features/CreateContractModal';
+import PaymentModal from '../components/features/PaymentModal'; // Import
 import { Plus, Search, Filter } from 'lucide-react';
-import Input from '../components/ui/Input';
 
 const Contracts = () => {
     const [contracts, setContracts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // RBAC Check
+    // Modal States
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [paymentModalData, setPaymentModalData] = useState({ isOpen: false, contractId: null });
+
     const user = JSON.parse(sessionStorage.getItem('user') || '{}');
     const canCreate = ['ADMIN', 'STAFF'].includes(user.role);
 
@@ -32,11 +34,15 @@ const Contracts = () => {
     fetchContracts();
     }, []);
 
-    // Client-side Search (High Performance for < 1000 records)
     const filteredContracts = contracts.filter(c => 
     c.contract_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.client_name_snapshot.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Handler for Payment Click
+    const handlePayClick = (contractId) => {
+    setPaymentModalData({ isOpen: true, contractId });
+    };
 
     return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -49,7 +55,7 @@ const Contracts = () => {
         </div>
         
         {canCreate && (
-            <Button onClick={() => setIsModalOpen(true)}>
+            <Button onClick={() => setIsCreateModalOpen(true)}>
             <Plus size={18} className="mr-2" />
             New Contract
             </Button>
@@ -75,14 +81,25 @@ const Contracts = () => {
         </button>
         </div>
 
-        {/* Data Table */}
-        <ContractTable contracts={filteredContracts} isLoading={loading} />
+        {/* Data Table with Payment Handler */}
+        <ContractTable 
+        contracts={filteredContracts} 
+        isLoading={loading} 
+        onPayClick={handlePayClick}
+        />
 
         {/* Modals */}
         <CreateContractModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSuccess={fetchContracts} // Refresh table after create
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+        onSuccess={fetchContracts} 
+        />
+
+        <PaymentModal 
+        isOpen={paymentModalData.isOpen}
+        contractId={paymentModalData.contractId}
+        onClose={() => setPaymentModalData({ isOpen: false, contractId: null })}
+        onSuccess={fetchContracts}
         />
     </div>
     );
