@@ -1,0 +1,64 @@
+name: Frontend Pipeline (Test & Merge)
+
+on:
+  push:
+    branches: 
+      - 'feat/client-ui'     # Khusus branch client feature
+      - 'client-ui'          # Branch client-ui
+    paths:
+      - 'client/**'          # HANYA jalan jika folder client berubah
+
+permissions:
+  contents: write
+
+jobs:
+  frontend-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: ./client
+        run: npm ci
+
+      - name: Run Unit Tests
+        working-directory: ./client
+        # CI=true memaksa test runner (Jest/Vitest) untuk jalan sekali lalu keluar
+        run: CI=true npm test
+
+      - name: Build Check
+        working-directory: ./client
+        run: npm run build
+
+  auto-merge-frontend:
+    needs: frontend-qa
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge to Dev
+        run: |
+          git config --global user.name "Credia CI Bot"
+          git config --global user.email "bot@credia.system"
+          
+          git fetch origin dev
+          git checkout dev
+          git pull origin dev
+          
+          echo "Merging changes from Frontend..."
+          git merge origin/${{ github.ref_name }} --no-ff -m "chore(frontend): auto-merge ${{ github.ref_name }} into dev [skip ci]"
+          
+          git push origin dev
