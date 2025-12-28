@@ -1,0 +1,30 @@
+[
+    {
+        "username": "sysadmin.finance",
+        "email": "admin@credia.id",
+        "password": "CrediaAdmin#2025!",
+        "role": "ADMIN",
+        "name": "Administrator System"
+    },
+    {
+        "username": "staff.jakarta",
+        "email": "staff.jkt@credia.id",
+        "password": "StaffAccess@123",
+        "role": "STAFF",
+        "name": "Rian Hidayat"
+    },
+    {
+        "username": "andri.wicaksono",
+        "email": "andri.wicak@gmail.com",
+        "password": "AndriUser#88",
+        "role": "CLIENT",
+        "name": "Andri Wicaksono"
+    },
+    {
+        "username": "budi.santoso",
+        "email": "budisan.jaya@yahoo.com",
+        "password": "BudiSan_99!",
+        "role": "CLIENT",
+        "name": "Budi Santoso"
+    }
+]

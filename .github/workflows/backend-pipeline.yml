@@ -1,0 +1,89 @@
+name: Backend Pipeline (Test & Merge)
+
+on:
+  push:
+    branches: 
+      - 'feat/server-core'   # Khusus branch server feature
+      - 'server-core'        # Branch server-core
+    paths:
+      - 'server/**'          # HANYA jalan jika folder server berubah
+
+permissions:
+  contents: write            # Izin wajib untuk Auto Merge
+
+jobs:
+  backend-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Setup MongoDB Service (Lebih cepat daripada action terpisah)
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.10.0
+        with:
+          mongodb-version: '6.0'
+          mongodb-replica-set: rs0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install & Seed
+        working-directory: ./server
+        run: |
+          npm ci
+          # Setup Environment Dummy
+          echo "PORT=5000" >> .env
+          echo "MONGO_URI=mongodb://localhost:27017/credia_db?directConnection=true" >> .env
+          echo "JWT_SECRET=ci_test_secret_key_12345" >> .env
+          echo "NODE_ENV=test" >> .env
+          node src/seeder.js
+
+      - name: Run Tests & Kill Server
+        working-directory: ./server
+        run: |
+          # 1. Jalankan server di background & simpan Process ID (PID)
+          npm start &
+          SERVER_PID=$!
+          
+          # 2. Tunggu server nyala
+          sleep 5
+          
+          # 3. Jalankan Test
+          node tests/run_all.js
+          TEST_EXIT_CODE=$?
+
+          # 4. MATIKAN SERVER (Solusi agar tidak hang)
+          kill $SERVER_PID
+          
+          # 5. Keluar sesuai status test (jika gagal, pipeline merah)
+          exit $TEST_EXIT_CODE
+
+  auto-merge-backend:
+    needs: backend-qa
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge to Dev
+        run: |
+          git config --global user.name "Credia CI Bot"
+          git config --global user.email "bot@credia.system"
+          
+          git fetch origin dev
+          git checkout dev
+          git pull origin dev
+          
+          echo "Merging changes from Backend..."
+          git merge origin/${{ github.ref_name }} --no-ff -m "chore(backend): auto-merge ${{ github.ref_name }} into dev [skip ci]"
+          
+          git push origin dev
