@@ -1,65 +1,63 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const UserSchema = new mongoose.Schema({
-    username: {
-        type: String,
-        required: true,
+const userSchema = new mongoose.Schema({
+    custom_id: { 
+        type: String, 
+        unique: true,
+        index: true 
+    },
+    username: { 
+        type: String, 
+        required: true, 
         unique: true,
         trim: true,
-        minlength: 3
+        index: true
     },
-    email: {
-        type: String,
-        required: true,
+    email: { 
+        type: String, 
+        required: true, 
         unique: true,
-        match: [
-            /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-            'Invalid email format'
-        ]
+        lowercase: true,
+        trim: true
     },
-    password: {
+    password: { 
+        type: String, 
+        required: true 
+    },
+    name: { 
+        type: String, 
+        required: true 
+    },
+    role: { 
+        type: String, 
+        enum: ['SUPERADMIN', 'ADMIN', 'STAFF', 'CLIENT', 'LEAD'], 
+        default: 'LEAD' 
+    },
+    status: {
         type: String,
-        required: true,
-        minlength: 6,
-        select: false
+        enum: ['ACTIVE', 'SUSPENDED', 'UNVERIFIED', 'BANNED'],
+        default: 'UNVERIFIED'
     },
-    role: {
-        type: String,
-        enum: ['ADMIN', 'STAFF', 'CLIENT'],
-        default: 'STAFF'
-    },
-    name: {
-        type: String,
-        default: ''
-    },
-    isActive: {
-        type: Boolean,
-        default: true
-    }
+    // Audit & Security Fields
+    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    last_login_at: { type: Date },
+    login_attempts: { type: Number, default: 0 }
 }, {
     timestamps: true
 });
 
-/**
- * Pre-save hook to hash password before saving to database.
- * Uses bcrypt with salt round 10.
- */
-UserSchema.pre('save', async function () {
-    if (!this.isModified('password')) {
-        return;
-    }
+// Encrypt password before save
+userSchema.pre('save', async function(next) {
+    if (!this.isModified('password')) return next();
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
+    next();
 });
 
-/**
- * Validates provided password against hashed password in database.
- * @param {string} enteredPassword 
- * @returns {Promise<boolean>}
- */
-UserSchema.methods.matchPassword = async function (enteredPassword) {
+// Match password helper
+userSchema.methods.matchPassword = async function(enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model('User', userSchema);

@@ -1,62 +1,52 @@
 const mongoose = require('mongoose');
 
-// Sub-Schema (Pengganti Installment.js)
-const AmortizationSchema = new mongoose.Schema({
-    month: { type: Number, required: true },
-    due_date: { type: Date, required: true },
-    amount: { type: Number, required: true },
-    status: {
-        type: String,
-        enum: ['UNPAID', 'PAID', 'LATE', 'WAIVED'],
-        default: 'UNPAID'
-    },
+const amortizationSchema = new mongoose.Schema({
+    month: Number,
+    due_date: Date,
+    amount: Number,
+    status: { type: String, enum: ['UNPAID', 'PAID', 'LATE', 'WAIVED'], default: 'UNPAID' },
     penalty_paid: { type: Number, default: 0 },
-    paid_at: { type: Date, default: null }
-}, { _id: false }); // Penting: _id false agar ringan
+    paid_at: Date
+});
 
-const ContractSchema = new mongoose.Schema({
-    contract_no: {
-        type: String,
-        required: true,
-        unique: true,
-        index: true
-    },
-    client: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-        index: true
-    },
-    client_name_snapshot: { type: String, required: true },
+const contractSchema = new mongoose.Schema({
+    // Identifiers
+    submission_id: { type: String, required: true, unique: true }, // Created on submit
+    contract_no: { type: String, unique: true, sparse: true }, // Created on Approval
+    
+    // Relations
+    client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    client_name_snapshot: { type: String, required: true }, // For performance
+    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Staff
+    approved_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Admin
 
     // Financials
     otr_price: { type: Number, required: true },
     dp_amount: { type: Number, required: true },
     principal_amount: { type: Number, required: true },
-    interest_rate: { type: Number, required: true },
-    duration_month: { type: Number, required: true },
+    interest_rate: { type: Number, required: true }, // Flat Yearly
+    
+    // Duration Logic
+    duration_month: { type: Number, required: true }, // Stored as integer
+    
+    // Installment Logic
     monthly_installment: { type: Number, required: true },
-
-    // Summary Fields (Cache untuk performa dashboard)
     total_loan: { type: Number, required: true },
     remaining_loan: { type: Number, required: true },
     total_paid: { type: Number, default: 0 },
 
-    status: {
-        type: String,
-        enum: ['ACTIVE', 'CLOSED', 'LATE', 'VOID'],
-        default: 'ACTIVE',
+    // Lifecycle
+    status: { 
+        type: String, 
+        enum: ['DRAFT', 'PENDING_ACTIVATION', 'ACTIVE', 'LOCKED', 'CLOSED', 'VOID', 'REJECTED'], 
+        default: 'PENDING_ACTIVATION',
         index: true
     },
-
-    // THE CORE: Embedded Schedule
-    amortization: [AmortizationSchema],
-
-    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    
+    void_reason: { type: String },
+    amortization: [amortizationSchema]
 }, {
-    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+    timestamps: true
 });
 
-ContractSchema.index({ client: 1, status: 1 });
-
-module.exports = mongoose.model('Contract', ContractSchema);
+module.exports = mongoose.model('Contract', contractSchema);
