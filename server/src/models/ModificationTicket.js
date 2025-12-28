@@ -28,16 +28,15 @@ const modificationTicketSchema = new mongoose.Schema({
         required: true 
     },
 
-    // Action Logic
     request_type: { 
         type: String, 
-        enum: ['CREATE', 'UPDATE', 'VOID', 'DELETE'], 
+        enum: ['CREATE', 'UPDATE', 'VOID', 'DELETE', 'ACTIVATE'], 
         required: true 
     },
     
     // Data Snapshots (For Audit & Reversion)
-    original_data: { type: Object }, // Before change
-    proposed_data: { type: Object }, // After change
+    original_data: { type: Object },
+    proposed_data: { type: Object },
 
     reason: { type: String, required: true },
     admin_note: { type: String },

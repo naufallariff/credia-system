@@ -2,13 +2,12 @@
   "name": "credia-server-core",
   "version": "1.0.0",
   "description": "Core Backend API for Credia System - Professional Loan Management",
-  "main": "src/app.js",
+  "main": "src/server.js", 
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
     "seed": "node src/seeder.js",
-    "test:auth": "node test-auth.js",
-    "test:contract": "node test-contract.js"
+    "test": "node tests/run_all.js"
   },
   "keywords": [
     "fintech",
@@ -35,5 +34,8 @@
     "morgan": "^1.10.1",
     "nodemailer": "^7.0.12",
     "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0" 
   }
 }

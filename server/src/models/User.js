@@ -23,11 +23,8 @@ const userSchema = new mongoose.Schema({
     },
     password: { 
         type: String, 
-        required: true 
-    },
-    must_change_password: { 
-        type: Boolean, 
-        default: false 
+        required: true,
+        select: false
     },
     name: { 
         type: String, 
@@ -43,7 +40,10 @@ const userSchema = new mongoose.Schema({
         enum: ['ACTIVE', 'SUSPENDED', 'UNVERIFIED', 'BANNED'],
         default: 'UNVERIFIED'
     },
-    // Audit & Security Fields
+    must_change_password: { 
+        type: Boolean, 
+        default: false 
+    },
     created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     last_login_at: { type: Date },
     login_attempts: { type: Number, default: 0 }
@@ -51,15 +51,12 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Encrypt password before save
-userSchema.pre('save', async function(next) {
-    if (!this.isModified('password')) return next();
+userSchema.pre('save', async function() {
+    if (!this.isModified('password')) return;
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-    next();
 });
 
-// Match password helper
 userSchema.methods.matchPassword = async function(enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
