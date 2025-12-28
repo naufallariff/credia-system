@@ -1,18 +1,38 @@
 const GlobalConfig = require('../models/GlobalConfig');
-const { successResponse } = require('../utils/response');
+const { sendResponse } = require('../utils/response');
 
-const updateRules = async (req, res, next) => {
+const getConfig = async (req, res, next) => {
     try {
-        // Input Admin: { min_dp_percent: 0.25, interest_tiers: [...] }
-        const updated = await GlobalConfig.findOneAndUpdate(
-            { key: 'LOAN_RULES' },
-            req.body,
-            { new: true, runValidators: true }
-        );
-        successResponse(res, updated, "Aturan pinjaman berhasil diupdate Admin");
+        const config = await GlobalConfig.findOne({ key: 'LOAN_RULES' }).lean();
+        sendResponse(res, 200, true, 'System configuration retrieved', config);
     } catch (error) {
         next(error);
     }
 };
 
-module.exports = { updateRules };
+const updateConfig = async (req, res, next) => {
+    try {
+        const { min_dp_percent, interest_tiers } = req.body;
+
+        // Security: Only Superadmin/Admin
+        if (!['SUPERADMIN', 'ADMIN'].includes(req.user.role)) {
+            return sendResponse(res, 403, false, 'Unauthorized to change system rules');
+        }
+
+        const config = await GlobalConfig.findOneAndUpdate(
+            { key: 'LOAN_RULES' },
+            {
+                min_dp_percent,
+                interest_tiers,
+                last_updated_by: req.user.id
+            },
+            { new: true, upsert: true }
+        );
+
+        sendResponse(res, 200, true, 'System configuration updated', config);
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { getConfig, updateConfig };

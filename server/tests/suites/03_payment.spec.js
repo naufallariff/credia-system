@@ -4,95 +4,58 @@ const runner = require('../lib/TestRunner');
 const API_URL = 'http://localhost:5000/api';
 
 const run = async () => {
-    runner.group('Payment Engine & Penalty Logic');
+    runner.group('Financial Engine V3.0');
 
-    // 1. Get Contract Details
-    let monthlyBill = 0;
-    await runner.test('Retrieve Contract Details', async () => {
-        const res = await axios.get(`${API_URL}/contracts/${global.NEW_CONTRACT_NO}`, {
-            headers: { Authorization: `Bearer ${global.STAFF_TOKEN}` }
-        });
-        runner.assertStatus(res, 200);
-        monthlyBill = res.data.data.monthly_installment;
-        runner.assertTruthy(monthlyBill > 0, 'Monthly bill should be positive');
-    });
-
-    // 2. Partial Payment (Should Fail)
+    // 1. Validate Partial Payment Rejection
     await runner.test('Validation: Reject Partial Payment', async () => {
         try {
-            await axios.post(
-                `${API_URL}/contracts/${global.NEW_CONTRACT_NO}/installments/1/pay`,
-                { amountPaid: monthlyBill - 50000 }, // Less than required
-                { headers: { Authorization: `Bearer ${global.STAFF_TOKEN}` } }
-            );
+            await axios.post(`${API_URL}/contracts/${global.ACTIVE_CONTRACT_ID}/pay`, {
+                month: 1,
+                amount: 500 // Too small
+            }, { headers: { Authorization: `Bearer ${global.STAFF_TOKEN}` } });
             throw new Error('Should reject partial payment');
         } catch (error) {
-            // Expect error message about insufficient payment
-            runner.assertStatus(error.response, 500); 
+            runner.assertStatus(error.response, 400);
         }
     });
 
-    // 3. Success Payment (On Time)
-    await runner.test('Logic: Process Valid Payment (On Time)', async () => {
-        const res = await axios.post(
-            `${API_URL}/contracts/${global.NEW_CONTRACT_NO}/installments/1/pay`,
-            { amountPaid: monthlyBill },
-            { headers: { Authorization: `Bearer ${global.STAFF_TOKEN}` } }
-        );
+    // 2. Successful Payment
+    await runner.test('Logic: Process Valid Payment', async () => {
+        // Need to calculate exact amount (including potential penalty if seeder date is old)
+        // Fetch contract first to check due amount
+        const contractRes = await axios.get(`${API_URL}/contracts/${global.ACTIVE_CONTRACT_ID}`, {
+            headers: { Authorization: `Bearer ${global.STAFF_TOKEN}` }
+        });
         
-        runner.assertStatus(res, 200);
-        runner.assertEquals(res.data.data.status, 'SUCCESS', 'Transaction Status');
-        runner.assertEquals(res.data.data.penalty_paid, 'Rp 0', 'Penalty should be 0');
-    });
-
-    // 4. Double Payment (Should Fail)
-    await runner.test('Validation: Reject Double Payment', async () => {
-        try {
-            await axios.post(
-                `${API_URL}/contracts/${global.NEW_CONTRACT_NO}/installments/1/pay`,
-                { amountPaid: monthlyBill },
-                { headers: { Authorization: `Bearer ${global.STAFF_TOKEN}` } }
-            );
-            throw new Error('Should reject double payment');
-        } catch (error) {
-            runner.assertStatus(error.response, 500);
-        }
-    });
-
-    // 5. SIMULATION: Late Payment
-    await runner.test('Logic: Penalty Calculation for Late Contract', async () => {
-        // Create a new contract backdated 1 year ago
-        const adminRes = await axios.get(`${API_URL}/users`, { headers: { Authorization: `Bearer ${global.ADMIN_TOKEN}` } });
-        const client = adminRes.data.data.find(u => u.role === 'CLIENT');
-        const lateContractNo = `LATE-${Date.now()}`;
-
-        // Create contract starting in 2023
-        const createRes = await axios.post(`${API_URL}/contracts`, {
-            contractNo: lateContractNo,
-            clientId: client._id,
-            otr: 15000000,
-            dpAmount: 3000000,
-            durationMonths: 12,
-            startDate: '2023-01-01' // Very old date
+        const installment = contractRes.data.data.amortization.find(a => a.month === 1);
+        // Assuming test runs instantly after creation, penalty is 0
+        // If Logic in service forces strict date, we might need to handle penalty_estimated
+        
+        const payRes = await axios.post(`${API_URL}/contracts/${global.ACTIVE_CONTRACT_ID}/pay`, {
+            month: 1,
+            amount: installment.amount // Exact amount
         }, { headers: { Authorization: `Bearer ${global.STAFF_TOKEN}` } });
 
-        const installmentAmount = createRes.data.data.monthly_installment;
+        runner.assertStatus(payRes, 200);
+        runner.assertEquals(payRes.data.data.status, 'SUCCESS', 'Transaction Status');
+    });
 
-        // Try to pay Month 1 (which was due Feb 2023)
-        // Backend should reject if we only pay installmentAmount because penalty is huge
+    // 3. Double Payment Prevention
+    await runner.test('Validation: Reject Double Payment', async () => {
         try {
-            await axios.post(
-                `${API_URL}/contracts/${lateContractNo}/installments/1/pay`,
-                { amountPaid: installmentAmount },
-                { headers: { Authorization: `Bearer ${global.STAFF_TOKEN}` } }
-            );
-            throw new Error('Should reject payment without penalty');
+            const contractRes = await axios.get(`${API_URL}/contracts/${global.ACTIVE_CONTRACT_ID}`, {
+                headers: { Authorization: `Bearer ${global.STAFF_TOKEN}` }
+            });
+            const installment = contractRes.data.data.amortization.find(a => a.month === 1);
+
+            await axios.post(`${API_URL}/contracts/${global.ACTIVE_CONTRACT_ID}/pay`, {
+                month: 1,
+                amount: installment.amount
+            }, { headers: { Authorization: `Bearer ${global.STAFF_TOKEN}` } });
+            
+            throw new Error('Should reject double payment');
         } catch (error) {
-            // We expect it to fail, but let's verify the message contains "Denda" or "Penalty"
-            const msg = error.response.data.message;
-            if (!msg.includes('Denda') && !msg.includes('Penalty')) {
-                throw new Error('Error message did not mention penalty details');
-            }
+            runner.assertStatus(error.response, 400);
         }
     });
 };

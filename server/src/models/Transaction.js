@@ -1,51 +1,32 @@
 const mongoose = require('mongoose');
 
-const TransactionSchema = new mongoose.Schema({
-    // 1. Relasi Database (Untuk join/populate internal)
-    contract_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Contract',
-        required: true,
-        index: true
+const transactionSchema = new mongoose.Schema({
+    contract: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Contract', 
+        required: true 
     },
-    // 2. Data Snapshot (Untuk pencarian manual/kuitansi)
-    contract_no: {
-        type: String,
-        required: true
+    transaction_no: { type: String, required: true, unique: true }, // TXN-...
+    
+    // Financials
+    amount_paid: { type: Number, required: true },
+    period_month: { type: Number, required: true }, // Installment month (e.g., 5)
+    penalty_included: { type: Number, default: 0 },
+    payment_method: { type: String, enum: ['TRANSFER', 'CASH', 'VA'], default: 'TRANSFER' },
+    
+    // Audit & Integrity
+    status: { 
+        type: String, 
+        enum: ['SUCCESS', 'VOID', 'DISPUTE'], 
+        default: 'SUCCESS' 
     },
-    installment_month: {
-        type: Number,
-        required: true
-    },
-    amount_paid: {
-        type: Number,
-        required: true
-    },
-    penalty_paid: {
-        type: Number,
-        default: 0
-    },
-    total_paid: {
-        type: Number,
-        required: true
-    },
-    payment_method: {
-        type: String,
-        enum: ['CASH', 'TRANSFER'],
-        default: 'CASH'
-    },
-    payment_date: {
-        type: Date,
-        default: Date.now
-    },
-    officer: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    notes: String
+    void_reason: { type: String },
+    ticket_reference: { type: String }, // Links to ModificationTicket if voided
+    
+    processed_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    processed_at: { type: Date, default: Date.now }
 }, {
-    timestamps: { createdAt: 'created_at', updatedAt: false } 
+    timestamps: true
 });
 
-module.exports = mongoose.model('Transaction', TransactionSchema);
+module.exports = mongoose.model('Transaction', transactionSchema);

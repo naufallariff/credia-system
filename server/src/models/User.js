@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema({
         type: String, 
         required: true 
     },
+    must_change_password: { 
+        type: Boolean, 
+        default: false 
+    },
     name: { 
         type: String, 
         required: true 

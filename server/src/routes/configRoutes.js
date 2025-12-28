@@ -1,9 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { updateRules } = require('../controllers/configController');
-const { protect, authorize } = require('../middlewares/authMiddleware');
+const { getConfig, updateConfig } = require('../controllers/configController');
+const { protect } = require('../middlewares/authMiddleware');
+const { authorize } = require('../middlewares/roleMiddleware');
 
-// HANYA ADMIN YANG BISA AKSES
-router.put('/rules', protect, authorize('ADMIN'), updateRules);
+router.use(protect);
+
+// Read: Everyone needs to know the rules
+router.get('/', getConfig);
+
+// Write: Executives Only
+router.put('/', authorize('SUPERADMIN', 'ADMIN'), updateConfig);
 
 module.exports = router;
