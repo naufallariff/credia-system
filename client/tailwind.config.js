@@ -1,32 +1,42 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-    content: [
-        "./index.html",
-        "./src/**/*.{js,ts,jsx,tsx}",
-    ],
+    content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
     theme: {
         extend: {
-            fontFamily: {
-                sans: ['Inter', 'system-ui', 'sans-serif'], // Professional font stack
-            },
+            // 1. Professional Color Palette (Blue & White)
             colors: {
-                // Credia Brand Palette (Modern Fintech Blue)
-                credia: {
+                primary: {
                     50: '#eff6ff',
                     100: '#dbeafe',
-                    200: '#bfdbfe',
-                    300: '#93c5fd',
-                    400: '#60a5fa',
                     500: '#3b82f6', // Standard Blue
-                    600: '#2563eb', // Primary Action
-                    700: '#1d4ed8',
-                    800: '#1e40af', // Deep Blue
-                    900: '#0f172a', // Sidebar Background (Very Dark Blue)
-                    950: '#020617',
+                    600: '#2563eb', // Royal Blue (Main)
+                    700: '#1d4ed8', // Darker Blue (Hover)
+                    900: '#1e3a8a', // Navy (Sidebar/Text)
+                },
+                surface: {
+                    50: '#f8fafc', // Very light grey/white for backgrounds
+                    100: '#f1f5f9',
+                    900: '#0f172a', // Text color
                 }
             },
-            boxShadow: {
-                'glow': '0 0 15px rgba(37, 99, 235, 0.3)', // Blue glow effect
+            // 2. Font Family (Clean & Modern)
+            fontFamily: {
+                sans: ['Inter', 'Plus Jakarta Sans', 'sans-serif'],
+            },
+            // 3. Dynamic Motion (Keyframes)
+            animation: {
+                'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                'scale-in': 'scaleIn 0.2s ease-out forwards',
+            },
+            keyframes: {
+                fadeInUp: {
+                    '0%': { opacity: '0', transform: 'translateY(10px)' },
+                    '100%': { opacity: '1', transform: 'translateY(0)' },
+                },
+                scaleIn: {
+                    '0%': { opacity: '0', transform: 'scale(0.95)' },
+                    '100%': { opacity: '1', transform: 'scale(1)' },
+                }
             }
         },
     },
