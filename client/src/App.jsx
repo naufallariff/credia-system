@@ -53,6 +53,30 @@ function App() {
           } 
         />
 
+        {/* STAFF ROUTES */}
+        <Route 
+          path="/contracts/new" 
+          element={
+            <ProtectedRoute allowedRoles={['STAFF', 'ADMIN', 'SUPERADMIN']}>
+              <MainLayout>
+                <CreateContract />
+              </MainLayout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* SHARED ROUTES (Detail View) */}
+        <Route 
+          path="/contracts/:id" 
+          element={
+            <ProtectedRoute allowedRoles={['STAFF', 'ADMIN', 'SUPERADMIN', 'CLIENT']}>
+              <MainLayout>
+                <ContractDetail />
+              </MainLayout>
+            </ProtectedRoute>
+          } 
+        />
+
         {/* Fallback */}
         <Route path="*" element={<NotFound />} />
       </Routes>
