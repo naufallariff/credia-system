@@ -1,46 +1,48 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: '/api',
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 10000, // 10s timeout for performance monitoring
+    timeout: 10000,
 });
 
-// Request Interceptor: Secure Token Injection
+// Request Interceptor: Attach Token
 api.interceptors.request.use(
     (config) => {
-        try {
-            const userStr = sessionStorage.getItem('user');
-            if (userStr) {
-                const user = JSON.parse(userStr);
-                if (user.token) {
-                    config.headers.Authorization = `Bearer ${user.token}`;
-                }
-            }
-        } catch (error) {
-            console.error('Error parsing session data', error);
-            sessionStorage.clear();
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
     },
     (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Global Error Handling & Session Management
+// Response Interceptor: Error Handling & Data Unwrapping
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        return response;
+    },
     (error) => {
-        // Security: Immediate logout on 401 (Unauthorized)
-        if (error.response && error.response.status === 401) {
-            sessionStorage.removeItem('user');
-            // Prevent redirect loops
-            if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
-            }
+        const originalRequest = error.config;
+
+        // Log error for debugging (Development only) - Using Vite's env check
+        if (import.meta.env.DEV) {
+            const traceId = error.response?.data?.trace_id || 'N/A';
+            console.error(`[API ERROR] Trace: ${traceId} | URL: ${originalRequest.url}`);
         }
-        return Promise.reject(error);
+
+        // Handle 401 Unauthorized (Token Expired or Invalid)
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+
+        const errorMessage = error.response?.data?.message || 'An unexpected network error occurred.';
+        return Promise.reject({ ...error, message: errorMessage });
     }
 );
 
