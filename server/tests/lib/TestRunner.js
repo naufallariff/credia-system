@@ -2,61 +2,64 @@ const colors = require('colors');
 
 class TestRunner {
     constructor() {
+        this.groupName = '';
+        this.total = 0;
         this.passed = 0;
         this.failed = 0;
     }
 
-    // Header for a Group of Tests
-    group(title) {
-        console.log(`\n========================================`.gray);
-        console.log(`SUITE: ${title}`.bold.cyan);
-        console.log(`========================================`.gray);
+    group(name) {
+        this.groupName = name;
+        console.log(`\n[SUITE] ${name}`.cyan.bold);
+        console.log('='.repeat(50).gray);
     }
 
-    // Individual Test Execution
     async test(description, fn) {
-        process.stdout.write(`TEST: ${description} ... `.white);
+        this.total++;
+        process.stdout.write(`TEST: ${description} ... `);
+        
         try {
             await fn();
-            console.log(`[PASS]`.green.bold);
+            console.log('[PASS]'.green.bold);
             this.passed++;
         } catch (error) {
-            console.log(`[FAIL]`.red.bold);
-            console.log(`    REASON: ${error.message}`.red);
-            if (error.response) {
+            console.log('[FAIL]'.red.bold);
+            console.log(`    REASON: ${error.message}`.yellow);
+            if (error.response && error.response.data) {
                 console.log(`    API RESPONSE: ${JSON.stringify(error.response.data)}`.gray);
             }
             this.failed++;
         }
     }
 
-    // Assertion Logic (Validation)
-    assertEquals(actual, expected, context) {
+    assertStatus(response, expectedStatus) {
+        if (response.status !== expectedStatus) {
+            throw new Error(`HTTP Status -> Expected ${expectedStatus}, got ${response.status}`);
+        }
+    }
+
+    assertEquals(actual, expected, fieldName) {
         if (actual !== expected) {
-            throw new Error(`${context} -> Expected '${expected}', but got '${actual}'`);
+            throw new Error(`${fieldName} -> Expected '${expected}', but got '${actual}'`);
         }
     }
 
-    assertTruthy(value, context) {
+    assertTruthy(value, fieldName) {
         if (!value) {
-            throw new Error(`${context} -> Expected truthy value, got ${value}`);
-        }
-    }
-
-    assertStatus(response, status) {
-        if (response.status !== status) {
-            throw new Error(`HTTP Status -> Expected ${status}, got ${response.status}`);
+            throw new Error(`${fieldName} -> Expected truthy value, got ${value}`);
         }
     }
 
     summary() {
-        console.log(`\n----------------------------------------`.gray);
-        console.log(`TEST SUMMARY`.bold);
-        console.log(`TOTAL:  ${this.passed + this.failed}`);
+        console.log('\n' + '-'.repeat(50).gray);
+        console.log('TEST SUMMARY'.white.bold);
+        console.log(`TOTAL:  ${this.total}`);
         console.log(`PASSED: ${this.passed}`.green);
         console.log(`FAILED: ${this.failed}`.red);
-        console.log(`----------------------------------------`.gray);
+        console.log('-'.repeat(50).gray + '\n');
+        
         if (this.failed > 0) process.exit(1);
+        process.exit(0);
     }
 }
 

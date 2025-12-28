@@ -3,259 +3,189 @@ const dotenv = require('dotenv');
 const colors = require('colors');
 const User = require('./models/User');
 const Contract = require('./models/Contract');
-const Transaction = require('./models/Transaction');
+const ModificationTicket = require('./models/ModificationTicket');
+const Notification = require('./models/Notification');
 const GlobalConfig = require('./models/GlobalConfig');
+const { generateId } = require('./utils/idGenerator');
 
-// Load env vars
 dotenv.config();
-
-// Connect DB
 mongoose.connect(process.env.MONGO_URI);
 
-/**
- * HELPER: UTC Midnight Standardizer
- * Ensures all dates are stored at 00:00:00.000 UTC to prevent timezone shifts
- */
 const setUTCMidnight = (date) => {
     const d = new Date(date);
     d.setUTCHours(0, 0, 0, 0);
     return d;
 };
 
-/**
- * HELPER: Smart Amortization Generator
- * Simulates history based on start date. 
- * If the month has passed, it marks it as PAID (unless forced otherwise).
- */
-const generateSmartSchedule = (principal, rate, months, startDateString, isBadClient = false) => {
+// Amortization Generator (Simplified for Seeder)
+const generateSchedule = (principal, rate, months, startDateString) => {
     const schedule = [];
-
-    // Financial Calculation (Flat Yearly)
     const totalInterest = Math.ceil(principal * (rate / 100) * (months / 12));
     const totalLoan = principal + totalInterest;
-
-    // Rounding up to nearest 1000 IDR for professional billing
     const monthlyInstallment = Math.ceil((totalLoan / months) / 1000) * 1000;
-
-    // Recalculate total loan based on rounded installment for precision
-    const finalTotalLoan = monthlyInstallment * months;
-
+    
     let currentDate = new Date(startDateString);
-    const today = new Date();
-    let totalPaid = 0;
-
+    
     for (let i = 1; i <= months; i++) {
-        // Increment month
         currentDate.setMonth(currentDate.getMonth() + 1);
-        const dueDate = setUTCMidnight(currentDate);
-
-        // Determine Status based on Time
-        let status = 'UNPAID';
-        let paidAt = null;
-
-        // Logic: If due date is in the past
-        if (dueDate < today) {
-            if (isBadClient) {
-                // Scenario: Client stops paying after month 3
-                if (i <= 3) {
-                    status = 'PAID';
-                    paidAt = dueDate; // Paid on time
-                    totalPaid += monthlyInstallment;
-                } else {
-                    status = 'LATE'; // Past due and not paid
-                }
-            } else {
-                // Scenario: Good Client (Paid everything in the past)
-                status = 'PAID';
-                paidAt = dueDate;
-                totalPaid += monthlyInstallment;
-            }
-        }
-
         schedule.push({
             month: i,
-            due_date: dueDate,
+            due_date: setUTCMidnight(currentDate),
             amount: monthlyInstallment,
-            status: status,
+            status: 'UNPAID',
             penalty_paid: 0,
-            paid_at: paidAt
+            paid_at: null
         });
     }
-
-    return {
-        schedule,
-        monthlyInstallment,
-        totalLoan: finalTotalLoan,
-        totalPaid,
-        remainingLoan: finalTotalLoan - totalPaid
-    };
+    return { schedule, monthlyInstallment, totalLoan };
 };
 
 const importData = async () => {
     try {
-        console.log('[INFO] Cleaning Database...'.red.inverse);
+        console.log('[INFO] Purging Database...'.red);
         await User.deleteMany();
         await Contract.deleteMany();
-        await Transaction.deleteMany();
+        await ModificationTicket.deleteMany();
+        await Notification.deleteMany();
         await GlobalConfig.deleteMany();
 
-        console.log('[INFO] Injecting Global Configuration...'.blue);
-        // Market Standard Rules 2025
+        console.log('[INFO] Injecting Global Config...'.blue);
         await GlobalConfig.create({
             key: 'LOAN_RULES',
-            min_dp_percent: 0.20, // 20% Standard OJK/Leasing
+            min_dp_percent: 0.20,
             interest_tiers: [
-                { min_price: 0, max_price: 50000000, rate_percent: 15 },    // Motorcycles (High Risk): 15%
-                { min_price: 50000001, max_price: 1000000000, rate_percent: 8 } // Cars (Medium Risk): 8%
+                { min_price: 0, max_price: 50000000, rate_percent: 15 },
+                { min_price: 50000001, max_price: 1000000000, rate_percent: 8 }
             ]
         });
 
-        console.log('[INFO] Creating Professional Users...'.green);
-        const users = await User.create([
-            // 1. Administrator (IT / Finance Head)
-            {
-                username: 'sysadmin.finance',
-                email: 'admin@credia.id',
-                password: 'CrediaAdmin#2025!', // Strong Password
-                role: 'ADMIN',
-                name: 'Administrator System'
-            },
-            // 2. Staff (Credit Marketing Officer)
-            {
-                username: 'staff.jakarta',
-                email: 'staff.jkt@credia.id',
-                password: 'StaffAccess@123',
-                role: 'STAFF',
-                name: 'Rian Hidayat'
-            },
-            // 3. Client 1 (Good History - Employee)
-            {
-                username: 'andri.wicaksono',
-                email: 'andri.wicak@gmail.com',
-                password: 'AndriUser#88',
-                role: 'CLIENT',
-                name: 'Andri Wicaksono'
-            },
-            // 4. Client 2 (Bad History - Entrepreneur)
-            {
-                username: 'budi.santoso',
-                email: 'budisan.jaya@yahoo.com',
-                password: 'BudiSan_99!',
-                role: 'CLIENT',
-                name: 'Budi Santoso'
-            }
-        ]);
+        console.log('[INFO] Creating IAM Users...'.green);
+        
+        // 1. Internal Team
+        const superAdmin = await User.create({
+            custom_id: generateId('USER'),
+            username: 'super.root',
+            email: 'root@credia.system',
+            password: 'SuperSecretPassword!1',
+            name: 'System Superadmin',
+            role: 'SUPERADMIN',
+            status: 'ACTIVE'
+        });
 
-        const [admin, staff, clientGood, clientBad] = users.map(u => u._id);
+        const adminFinance = await User.create({
+            custom_id: generateId('USER'),
+            username: 'admin.finance',
+            email: 'finance@credia.system',
+            password: 'AdminPassword!23',
+            name: 'Sarah Finance',
+            role: 'ADMIN',
+            status: 'ACTIVE',
+            created_by: superAdmin._id
+        });
 
-        console.log('[INFO] Generating Contracts & Amortization Schedules...'.green);
+        const staffSales = await User.create({
+            custom_id: generateId('USER'),
+            username: 'staff.sales',
+            email: 'sales@credia.system',
+            password: 'StaffPassword!23',
+            name: 'Budi Sales',
+            role: 'STAFF',
+            status: 'ACTIVE',
+            created_by: adminFinance._id
+        });
 
-        // --- CASE 1: TOYOTA AVANZA (Good Client) ---
-        // Scenario: Started 6 months ago, Paying smoothly.
-        const otrCar = 230000000; // 230 Million
-        const dpCar = 50000000;   // 50 Million
-        const principalCar = otrCar - dpCar;
+        // 2. Clients (Borrowers)
+        const client1 = await User.create({
+            custom_id: generateId('USER'),
+            username: 'client.andri',
+            email: 'andri@gmail.com',
+            password: 'UserPassword!23',
+            name: 'Andri Wicaksono',
+            role: 'CLIENT',
+            status: 'ACTIVE',
+            created_by: adminFinance._id
+        });
 
-        // Start date: 6 months ago
-        const dateCar = new Date();
-        dateCar.setMonth(dateCar.getMonth() - 6);
+        const client2 = await User.create({
+            custom_id: generateId('USER'),
+            username: 'client.dewi',
+            email: 'dewi@gmail.com',
+            password: 'UserPassword!23',
+            name: 'Dewi Persik',
+            role: 'CLIENT',
+            status: 'ACTIVE',
+            created_by: adminFinance._id
+        });
 
-        const calcCar = generateSmartSchedule(
-            principalCar,
-            8,  // 8% Interest for Cars
-            36, // 3 Years Tenor
-            dateCar.toISOString(),
-            false // Good Client
-        );
+        console.log('[INFO] Generating Contracts...'.green);
 
-        // --- CASE 2: HONDA PCX 160 (Bad Client) ---
-        // Scenario: Started 5 months ago, Paid first 3 months, now delinquent (Late).
-        const otrMotor = 32500000; // 32.5 Million
-        const dpMotor = 7500000;   // 7.5 Million
-        const principalMotor = otrMotor - dpMotor;
+        // Scenario 1: ACTIVE Contract (Running smoothly)
+        const calc1 = generateSchedule(20000000, 15, 12, '2024-01-01');
+        const contractActive = await Contract.create({
+            submission_id: generateId('SUBMISSION'),
+            contract_no: generateId('CONTRACT'),
+            client: client1._id,
+            client_name_snapshot: client1.name,
+            created_by: staffSales._id,
+            approved_by: adminFinance._id,
+            otr_price: 25000000,
+            dp_amount: 5000000,
+            principal_amount: 20000000,
+            interest_rate: 15,
+            duration_month: 12,
+            monthly_installment: calc1.monthlyInstallment,
+            total_loan: calc1.totalLoan,
+            remaining_loan: calc1.totalLoan,
+            status: 'ACTIVE',
+            amortization: calc1.schedule
+        });
 
-        const dateMotor = new Date();
-        dateMotor.setMonth(dateMotor.getMonth() - 5);
+        // Scenario 2: PENDING Contract (Waiting for Approval)
+        // Staff submitted, but Admin hasn't touched it. Contract No is null/undefined.
+        const calc2 = generateSchedule(80000000, 8, 24, new Date().toISOString());
+        const contractPending = await Contract.create({
+            submission_id: generateId('SUBMISSION'),
+            // No contract_no yet!
+            client: client2._id,
+            client_name_snapshot: client2.name,
+            created_by: staffSales._id,
+            otr_price: 100000000,
+            dp_amount: 20000000,
+            principal_amount: 80000000,
+            interest_rate: 8,
+            duration_month: 24,
+            monthly_installment: calc2.monthlyInstallment,
+            total_loan: calc2.totalLoan,
+            remaining_loan: calc2.totalLoan,
+            status: 'PENDING_ACTIVATION',
+            amortization: calc2.schedule
+        });
 
-        const calcMotor = generateSmartSchedule(
-            principalMotor,
-            15, // 15% Interest for Motorcycles
-            12, // 1 Year Tenor
-            dateMotor.toISOString(),
-            true // Bad Client (Trigger LATE status)
-        );
+        console.log('[INFO] Generating Approval Tickets...'.green);
 
-        // --- CASE 3: YAMAHA NMAX (New Contract) ---
-        // Scenario: Started Today. No payments yet.
-        const otrNew = 31000000;
-        const dpNew = 7000000;
-        const principalNew = otrNew - dpNew;
-        const dateNew = new Date().toISOString();
+        // Scenario 3: Request Correction (Staff made a typo on Active Contract)
+        await ModificationTicket.create({
+            ticket_no: generateId('TICKET'),
+            requester_id: staffSales._id,
+            target_model: 'CONTRACT',
+            target_id: contractActive._id,
+            request_type: 'UPDATE',
+            original_data: { client_name: 'Andri Wicaksono' },
+            proposed_data: { client_name: 'Andri Wicaksono Gelar S.Kom' },
+            reason: 'Correction on client full name title',
+            status: 'PENDING'
+        });
 
-        const calcNew = generateSmartSchedule(
-            principalNew,
-            15,
-            12,
-            dateNew,
-            false
-        );
+        // Notification for Admin
+        await Notification.create({
+            recipient_id: adminFinance._id,
+            type: 'WARNING',
+            title: 'New Contract Needs Approval',
+            message: `Submission ${contractPending.submission_id} is waiting for review.`,
+            related_id: contractPending.submission_id
+        });
 
-        await Contract.create([
-            {
-                contract_no: 'CRD-CAR-001',
-                client: clientGood,
-                client_name_snapshot: 'Andri Wicaksono',
-                otr_price: otrCar,
-                dp_amount: dpCar,
-                principal_amount: principalCar,
-                interest_rate: 8,
-                duration_month: 36,
-                monthly_installment: calcCar.monthlyInstallment,
-                total_loan: calcCar.totalLoan,
-                remaining_loan: calcCar.remainingLoan, // Calculated remaining
-                total_paid: calcCar.totalPaid,
-                status: 'ACTIVE',
-                amortization: calcCar.schedule,
-                created_by: staff
-            },
-            {
-                contract_no: 'CRD-MTR-888',
-                client: clientBad,
-                client_name_snapshot: 'Budi Santoso',
-                otr_price: otrMotor,
-                dp_amount: dpMotor,
-                principal_amount: principalMotor,
-                interest_rate: 15,
-                duration_month: 12,
-                monthly_installment: calcMotor.monthlyInstallment,
-                total_loan: calcMotor.totalLoan,
-                remaining_loan: calcMotor.remainingLoan,
-                total_paid: calcMotor.totalPaid,
-                status: 'LATE', // Forced status based on bad history
-                amortization: calcMotor.schedule,
-                created_by: staff
-            },
-            {
-                contract_no: 'CRD-MTR-900',
-                client: clientGood,
-                client_name_snapshot: 'Andri Wicaksono',
-                otr_price: otrNew,
-                dp_amount: dpNew,
-                principal_amount: principalNew,
-                interest_rate: 15,
-                duration_month: 12,
-                monthly_installment: calcNew.monthlyInstallment,
-                total_loan: calcNew.totalLoan,
-                remaining_loan: calcNew.totalLoan, // Full loan remaining
-                total_paid: 0,
-                status: 'ACTIVE',
-                amortization: calcNew.schedule,
-                created_by: staff
-            }
-        ]);
-
-        console.log('[INFO] Data Seeded Successfully.'.green.inverse);
-        console.log('[INFO] Admin Credentials: sysadmin.finance / CrediaAdmin#2025!'.gray);
+        console.log('[INFO] Database Seeded Successfully with V3.0 Architecture.'.green.inverse);
         process.exit();
     } catch (err) {
         console.error(`${err}`.red.inverse);
