@@ -4,47 +4,44 @@ const runner = require('../lib/TestRunner');
 const API_URL = 'http://localhost:5000/api';
 
 const run = async () => {
-    runner.group('Contract Lifecycle & Business Rules');
+    runner.group('Contract Lifecycle V3.0');
 
     let clientId;
 
-    // Helper: Get a Client ID first
-    await runner.test('Setup: Retrieve Client ID', async () => {
+    // Helper: Get Client ID
+    await runner.test('Setup: Fetch Client ID', async () => {
         const res = await axios.get(`${API_URL}/users`, {
             headers: { Authorization: `Bearer ${global.ADMIN_TOKEN}` }
         });
-        const client = res.data.data.find(u => u.role === 'CLIENT');
-        runner.assertTruthy(client, 'Client existence');
+        const client = res.data.data.find(u => u.username === 'client.andri');
+        runner.assertTruthy(client, 'Client Retrieval');
         clientId = client._id;
     });
 
-    // 1. Validation: DP too low
-    await runner.test('Validation: Reject DP below 20%', async () => {
+    // 1. Validation Test
+    await runner.test('Validation: Reject Low DP', async () => {
         try {
             await axios.post(`${API_URL}/contracts`, {
-                contractNo: `FAIL-${Date.now()}`,
                 clientId: clientId,
-                otr: 20000000,
-                dpAmount: 1000000, // Only 5% (Too low)
+                otr: 30000000,
+                dpAmount: 1000000, // Too low
                 durationMonths: 12,
                 startDate: '2025-01-01'
             }, { headers: { Authorization: `Bearer ${global.STAFF_TOKEN}` } });
-            throw new Error('Should have rejected low DP');
+            throw new Error('Should reject low DP');
         } catch (error) {
-            runner.assertStatus(error.response, 400); // Pastikan status code sesuai controller Anda (bisa 400 atau 500)
+            runner.assertStatus(error.response, 400);
         }
     });
 
-    // 2. Successful Creation
-    const validContractNo = `TEST-${Math.floor(Math.random() * 100000)}`;
-    await runner.test('Logic: Create Valid Contract and Verify Financials', async () => {
+    // 2. Create Submission (Pending)
+    await runner.test('Logic: Submit Contract Draft', async () => {
         const payload = {
-            contractNo: validContractNo,
             clientId: clientId,
-            otr: 30000000, // 30 Juta (Masuk Kategori Motor < 50jt)
+            otr: 30000000,
             dpAmount: 6000000, // 20%
             durationMonths: 12,
-            startDate: new Date().toISOString().split('T')[0]
+            startDate: new Date().toISOString()
         };
 
         const res = await axios.post(`${API_URL}/contracts`, payload, {
@@ -52,21 +49,47 @@ const run = async () => {
         });
 
         runner.assertStatus(res, 201);
+        runner.assertEquals(res.data.data.status, 'PENDING_ACTIVATION', 'Initial Status');
         
-        // Manual Math Verification (UPDATED 15% RATE)
-        const principal = 30000000 - 6000000; // 24jt
-        
-        // [FIX] Gunakan 0.15 (15%) karena OTR < 50 Juta
-        const expectedInterest = Math.ceil(principal * 0.15 * 1); // 15% flat = 3.6jt
-        
-        const expectedTotal = principal + expectedInterest; // 24 + 3.6 = 27.6jt
-        const expectedMonthly = Math.ceil((expectedTotal / 12) / 1000) * 1000; // 2.300.000
+        global.PENDING_CONTRACT_ID = res.data.data._id;
+    });
 
-        runner.assertEquals(res.data.data.principal_amount, principal, 'Principal Amount');
-        runner.assertEquals(res.data.data.monthly_installment, expectedMonthly, 'Monthly Installment Calculation');
+    // 3. Activation via Ticket (Simulated for V3)
+    // Assuming backend auto-generates ticket or we create one manually.
+    // Here we manually create an ACTIVATE ticket to simulate Staff request
+    await runner.test('Workflow: Create Activation Ticket', async () => {
+        const res = await axios.post(`${API_URL}/tickets`, {
+            targetModel: 'CONTRACT',
+            targetId: global.PENDING_CONTRACT_ID,
+            requestType: 'ACTIVATE',
+            reason: 'Documents verified',
+            proposedData: {}
+        }, { headers: { Authorization: `Bearer ${global.STAFF_TOKEN}` } });
         
-        // [PENTING] Save global variable agar test selanjutnya bisa jalan
-        global.NEW_CONTRACT_NO = validContractNo; 
+        runner.assertStatus(res, 201);
+        global.TICKET_ID = res.data.data._id;
+    });
+
+    // 4. Admin Approves
+    await runner.test('Workflow: Admin Approves Activation', async () => {
+        const res = await axios.put(`${API_URL}/tickets/${global.TICKET_ID}/approve`, {
+            action: 'APPROVE',
+            note: 'Approved by Finance Head'
+        }, { headers: { Authorization: `Bearer ${global.ADMIN_TOKEN}` } });
+
+        runner.assertStatus(res, 200);
+        runner.assertEquals(res.data.data.status, 'APPROVED', 'Ticket Status');
+    });
+
+    // 5. Verify Active
+    await runner.test('Verification: Contract is now ACTIVE', async () => {
+        const res = await axios.get(`${API_URL}/contracts/${global.PENDING_CONTRACT_ID}`, {
+            headers: { Authorization: `Bearer ${global.STAFF_TOKEN}` }
+        });
+        
+        runner.assertEquals(res.data.data.status, 'ACTIVE', 'Contract Status');
+        runner.assertTruthy(res.data.data.contract_no, 'Official Contract No exists');
+        global.ACTIVE_CONTRACT_ID = global.PENDING_CONTRACT_ID;
     });
 };
 

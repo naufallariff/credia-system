@@ -1,16 +1,19 @@
 const mongoose = require('mongoose');
+require('colors');
 
 const connectDB = async () => {
     try {
-        // 1. Mencoba menghubungi MongoDB
         const conn = await mongoose.connect(process.env.MONGO_URI);
-
-        // 2. Jika berhasil, tampilkan host-nya (tanda sukses)
-        console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+        console.log(`\nMongoDB Connection Established Successfully`.cyan.bold);
+        console.log(`------------------------------------------------`.gray);
+        console.log(`Connection Status : `.white + `Connected`.green.bold);
+        console.log(`Database Host     : `.white + `${conn.connection.host}`.yellow);
+        console.log(`Database Port     : `.white + `${conn.connection.port}`.yellow);
+        console.log(`Database Name     : `.white + `${conn.connection.name}`.yellow);
+        console.log(`------------------------------------------------\n`.gray);
     } catch (error) {
-        // 3. Jika gagal (misal salah password/docker mati), matikan server
-        console.error(`❌ Error: ${error.message}`);
-        process.exit(1); // Exit code 1 artinya "Keluar dengan Error"
+        console.error(`Error: ${error.message}`.red.bold);
+        process.exit(1);
     }
 };
 

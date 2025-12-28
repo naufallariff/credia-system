@@ -1,26 +1,26 @@
+const colors = require('colors');
 const runner = require('./lib/TestRunner');
 
-// Import Suites
-const runAuth = require('./suites/01_auth.spec');
-const runContract = require('./suites/02_contract.spec');
-const runPayment = require('./suites/03_payment.spec');
+// Suites
+const authSuite = require('./suites/01_auth.spec.js');
+const contractSuite = require('./suites/02_contract.spec.js');
+const paymentSuite = require('./suites/03_payment.spec.js');
 
 const main = async () => {
-    console.log(`\nCREDIA SYSTEM - AUTOMATED TESTING SUITE`.bold.white.bgBlue);
+    console.clear();
+    console.log('CREDIA SYSTEM V3.0 - ENTERPRISE AUTOMATED TESTING'.blue.bold);
     console.log(`Environment: Localhost:5000`.gray);
-    console.log(`Target: API Stability & Business Logic`.gray);
+    console.log('Target: Full Integration (Auth -> Workflow -> Finance)\n'.gray);
 
     try {
-        // Run Sequentially
-        await runAuth();
-        await runContract();
-        await runPayment();
-
-        // Print Final Result
+        await authSuite();
+        await contractSuite();
+        await paymentSuite();
+    } catch (err) {
+        console.error('\nCRITICAL TEST SUITE ERROR:'.red.bold);
+        console.error(err);
+    } finally {
         runner.summary();
-        
-    } catch (error) {
-        console.error('FATAL ERROR IN TEST SUITE:'.red, error);
     }
 };
 
