@@ -11,7 +11,11 @@ import ChangeInitialPassword from './pages/auth/ChangeInitialPassword';
 // Operational Pages
 import CreateContract from './pages/staff/CreateContract';
 import ContractList from './pages/staff/ContractList';
+
+// Shared Pages
 import ContractDetail from './pages/shared/ContractDetail';
+import Dashboard from './pages/shared/Dashboard';
+import NotFound from './pages/shared/NotFound';
 
 // Admin Pages
 import ApprovalList from './pages/admin/ApprovalList';
@@ -26,17 +30,14 @@ const DashboardDispatcher = () => {
   const { user } = useAuth();
 
   if (user?.role === 'CLIENT') return <ClientDashboard />;
-  if (user?.role === 'STAFF') return <ContractList />; // Staff default to list
-  if (['ADMIN', 'SUPERADMIN'].includes(user?.role)) return <ApprovalList />; // Admin default to work queue
+  
+  // Admin & Staff share the professional Dashboard
+  if (['ADMIN', 'SUPERADMIN', 'STAFF'].includes(user?.role)) {
+    return <Dashboard />;
+  }
 
   return <div className="p-8">Initializing Dashboard...</div>;
 };
-
-const NotFound = () => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-400">
-    404 | Page Not Found
-  </div>
-);
 
 function App() {
   return (
