@@ -31,8 +31,7 @@ jobs:
 
       - name: Run Unit Tests
         working-directory: ./client
-        # CI=true memaksa test runner (Jest/Vitest) untuk jalan sekali lalu keluar
-        run: CI=true npm test
+        run: npm test
 
       - name: Build Check
         working-directory: ./client
