@@ -10,6 +10,9 @@ import ChangeInitialPassword from './pages/auth/ChangeInitialPassword';
 // Admin Pages
 import ApprovalList from './pages/admin/ApprovalList';
 
+// Staff Pages
+import ContractList from './pages/staff/ContractList';
+
 // Placeholder Pages (To avoid crash before development)
 const Dashboard = () => <div className="text-slate-700">Welcome to Credia Enterprise V3.0</div>;
 const NotFound = () => <div className="text-center mt-20 text-slate-500">Page Not Found</div>;
@@ -21,14 +24,14 @@ function App() {
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        
+
         {/* Semi-Protected (Change Password Flow) */}
-        <Route 
-          path="/auth/change-initial-password" 
+        <Route
+          path="/auth/change-initial-password"
           element={
             // No MainLayout here, just the form
             <ChangeInitialPassword />
-          } 
+          }
         />
 
         {/* Secured Routes with Layout */}
@@ -36,45 +39,56 @@ function App() {
           <ProtectedRoute>
             <MainLayout>
               {/* This is the default output for nested routes */}
-              <Dashboard /> 
+              <Dashboard />
             </MainLayout>
           </ProtectedRoute>
         } />
 
         {/* ADMIN ROUTES */}
-        <Route 
-          path="/approvals" 
+        <Route
+          path="/approvals"
           element={
             <ProtectedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
               <MainLayout>
                 <ApprovalList />
               </MainLayout>
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* STAFF ROUTES */}
-        <Route 
-          path="/contracts/new" 
+        <Route
+          path="/contracts/new"
           element={
             <ProtectedRoute allowedRoles={['STAFF', 'ADMIN', 'SUPERADMIN']}>
               <MainLayout>
                 <CreateContract />
               </MainLayout>
             </ProtectedRoute>
-          } 
+          }
+        />
+
+        <Route
+          path="/contracts"
+          element={
+            <ProtectedRoute allowedRoles={['STAFF', 'ADMIN', 'SUPERADMIN']}>
+              <MainLayout>
+                <ContractList />
+              </MainLayout>
+            </ProtectedRoute>
+          }
         />
 
         {/* SHARED ROUTES (Detail View) */}
-        <Route 
-          path="/contracts/:id" 
+        <Route
+          path="/contracts/:id"
           element={
             <ProtectedRoute allowedRoles={['STAFF', 'ADMIN', 'SUPERADMIN', 'CLIENT']}>
               <MainLayout>
                 <ContractDetail />
               </MainLayout>
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Fallback */}

@@ -2,12 +2,24 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../../services/api';
 import { formatRupiah, formatDate, getStatusColor } from '../../utils/formatters';
-import { FileText, Calendar, DollarSign, AlertTriangle } from 'lucide-react';
+import { FileText, Calendar, DollarSign } from 'lucide-react';
+import ActionModal from '../../components/features/tickets/ActionModal';
+import { useAuth } from '../../hooks/useAuth';
 
 const ContractDetail = () => {
     const { id } = useParams();
     const [contract, setContract] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    const { user } = useAuth();
+    const [modalOpen, setModalOpen] = useState(false);
+    const [actionType, setActionType] = useState('ACTIVATE');
+
+    // Helper to open modal
+    const openAction = (type) => {
+        setActionType(type);
+        setModalOpen(true);
+    };
 
     useEffect(() => {
         const fetchDetail = async () => {
@@ -28,7 +40,7 @@ const ContractDetail = () => {
 
     return (
         <div className="space-y-6">
-            {/* HEADER */}
+            {/* HEADER with Actions */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <div>
                     <div className="flex items-center gap-3 mb-1">
@@ -44,16 +56,38 @@ const ContractDetail = () => {
                     </p>
                 </div>
 
-                {/* Quick Stats */}
-                <div className="flex gap-6 text-sm">
-                    <div className="text-right">
-                        <p className="text-slate-400">Total Loan</p>
-                        <p className="font-mono font-bold text-slate-800">{formatRupiah(contract.total_loan)}</p>
+                {/* GOVERNANCE ACTIONS (Visible to Staff Only) */}
+                {user?.role === 'STAFF' && (
+                    <div className="flex gap-2">
+                        {contract.status === 'PENDING_ACTIVATION' && (
+                            <button
+                                onClick={() => openAction('ACTIVATE')}
+                                className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 shadow-lg shadow-green-500/20 transition-all text-sm"
+                            >
+                                Request Activation
+                            </button>
+                        )}
+                        {contract.status === 'ACTIVE' && (
+                            <button
+                                onClick={() => openAction('UPDATE')}
+                                className="px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-all text-sm"
+                            >
+                                Request Correction
+                            </button>
+                        )}
                     </div>
-                    <div className="text-right">
-                        <p className="text-slate-400">Remaining</p>
-                        <p className="font-mono font-bold text-indigo-600">{formatRupiah(contract.remaining_loan)}</p>
-                    </div>
+                )}
+            </div>
+
+            {/* Quick Stats */}
+            <div className="flex flex-wrap gap-6 text-sm bg-white p-4 rounded-xl border border-slate-200 md:bg-transparent md:border-none md:p-0">
+                <div className="text-left md:text-right">
+                    <p className="text-slate-400">Total Loan</p>
+                    <p className="font-mono font-bold text-slate-800">{formatRupiah(contract.total_loan)}</p>
+                </div>
+                <div className="text-left md:text-right">
+                    <p className="text-slate-400">Remaining</p>
+                    <p className="font-mono font-bold text-indigo-600">{formatRupiah(contract.remaining_loan)}</p>
                 </div>
             </div>
 
@@ -89,10 +123,10 @@ const ContractDetail = () => {
                                     </td>
                                     <td className="px-6 py-3 text-center">
                                         <span className={`
-                      px-2 py-0.5 rounded text-xs font-bold
-                      ${schedule.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}
-                      ${schedule.status === 'OVERDUE' ? 'bg-red-100 text-red-600' : ''}
-                    `}>
+                                            px-2 py-0.5 rounded text-xs font-bold
+                                            ${schedule.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}
+                                            ${schedule.status === 'OVERDUE' ? 'bg-red-100 text-red-600' : ''}
+                                        `}>
                                             {schedule.status}
                                         </span>
                                     </td>
@@ -103,7 +137,7 @@ const ContractDetail = () => {
                 </div>
             </div>
 
-            {/* INFO CARD (Contract Details) */}
+            {/* INFO CARDS (Contract Details) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white p-6 rounded-xl border border-slate-200">
                     <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -145,6 +179,15 @@ const ContractDetail = () => {
                     </div>
                 </div>
             </div>
+
+            {/* CRITICAL FIX: Governance Action Modal */}
+            <ActionModal
+                isOpen={modalOpen}
+                onClose={() => setModalOpen(false)}
+                contractId={contract._id}
+                actionType={actionType}
+                onSuccess={() => window.location.reload()}
+            />
         </div>
     );
 };
