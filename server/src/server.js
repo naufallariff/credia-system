@@ -32,12 +32,11 @@ const startServer = async () => {
         // 3. Graceful Shutdown Handling
         const shutdown = () => {
             console.log('\n[INFO] Termination signal received. Closing server...'.magenta);
-            server.close(() => {
+            server.close(async () => {
                 console.log('[INFO] Server closed.'.gray);
-                mongoose.connection.close(false, () => {
-                    console.log('[INFO] MongoDB connection closed.'.gray);
-                    process.exit(0);
-                });
+                await mongoose.connection.close(false);
+                console.log('[INFO] MongoDB connection closed.'.gray);
+                process.exit(0);
             });
         };
 

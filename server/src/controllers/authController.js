@@ -60,10 +60,21 @@ const register = async (req, res, next) => {
  */
 const login = async (req, res, next) => {
     try {
-        const { username, password } = req.body;
+        const { identifier, username, password } = req.body;
+
+        const loginInput = identifier || username;
+
+        if (!loginInput || !password) {
+            return sendResponse(res, 400, false, 'Please provide username/email and password');
+        }
 
         // Explicitly select password as it is hidden by default in the model
-        const user = await User.findOne({ username }).select('+password');
+        const user = await User.findOne({
+            $or: [
+                { username: loginInput },
+                { email: loginInput }
+            ]
+        }).select('+password');
 
         if (!user) {
             return sendResponse(res, 401, false, 'Invalid credentials');
@@ -88,7 +99,7 @@ const login = async (req, res, next) => {
         // Security: Force Password Change Check
         if (user.must_change_password) {
             const resetToken = generateResetToken(user._id);
-            
+
             return sendResponse(res, 200, true, 'Password change required', {
                 require_password_change: true,
                 temp_token: resetToken, // This token can ONLY be used at /change-initial-password
@@ -138,16 +149,16 @@ const getMe = async (req, res, next) => {
 const changeInitialPassword = async (req, res, next) => {
     try {
         const { newPassword } = req.body;
-        
+
         // Middleware 'protect' has already verified the token and populated req.user
         const user = await User.findById(req.user.id);
-        
+
         if (!user.must_change_password) {
             return sendResponse(res, 400, false, 'Action not valid. Account is already set up.');
         }
 
         // Update Password (Hashing is handled by Pre-Save hook in Model)
-        user.password = newPassword; 
+        user.password = newPassword;
         user.must_change_password = false; // Disable the flag
         await user.save();
 
