@@ -1,30 +1,51 @@
 [
     {
-        "username": "sysadmin.finance",
-        "email": "admin@credia.id",
-        "password": "CrediaAdmin#2025!",
+        "custom_id": "USER_SUPER_ROOT",
+        "username": "super.root",
+        "email": "root@credia.system",
+        "password": "SuperSecretPassword!1",
+        "name": "System Superadmin",
+        "role": "SUPERADMIN",
+        "status": "ACTIVE"
+    },
+    {
+        "custom_id": "USER_ADMIN_FINANCE",
+        "username": "admin.finance",
+        "email": "finance@credia.system",
+        "password": "AdminPassword!23",
+        "name": "Sarah Finance",
         "role": "ADMIN",
-        "name": "Administrator System"
+        "status": "ACTIVE",
+        "created_by": "USER_SUPER_ROOT"
     },
     {
-        "username": "staff.jakarta",
-        "email": "staff.jkt@credia.id",
-        "password": "StaffAccess@123",
+        "custom_id": "USER_STAFF_SALES",
+        "username": "staff.sales",
+        "email": "sales@credia.system",
+        "password": "StaffPassword!23",
+        "name": "Budi Sales",
         "role": "STAFF",
-        "name": "Rian Hidayat"
+        "status": "ACTIVE",
+        "created_by": "USER_ADMIN_FINANCE"
     },
     {
-        "username": "andri.wicaksono",
-        "email": "andri.wicak@gmail.com",
-        "password": "AndriUser#88",
+        "custom_id": "USER_CLIENT_ANDRI",
+        "username": "client.andri",
+        "email": "andri@gmail.com",
+        "password": "UserPassword!23",
+        "name": "Andri Wicaksono",
         "role": "CLIENT",
-        "name": "Andri Wicaksono"
+        "status": "ACTIVE",
+        "created_by": "USER_ADMIN_FINANCE"
     },
     {
-        "username": "budi.santoso",
-        "email": "budisan.jaya@yahoo.com",
-        "password": "BudiSan_99!",
+        "custom_id": "USER_CLIENT_DEWI",
+        "username": "client.dewi",
+        "email": "dewi@gmail.com",
+        "password": "UserPassword!23",
+        "name": "Dewi Persik",
         "role": "CLIENT",
-        "name": "Budi Santoso"
+        "status": "ACTIVE",
+        "created_by": "USER_ADMIN_FINANCE"
     }
 ]
