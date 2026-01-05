@@ -4,7 +4,7 @@ import { ProtectedRoute } from '@/shared/lib/protected-route';
 import { DashboardLayout } from '@/widgets/layout/dashboard-layout';
 
 // Placeholder Components (Will be replaced in next phase)
-const DashboardPage = () => <div className="p-4 bg-white rounded-xl shadow-sm border border-slate-200 h-96"><h1>Dashboard Statistics Loading...</h1></div>;
+import { DashboardPage } from '@/pages/dashboard/dashboard-page';
 const ClientDashboardPage = () => <div className="p-10"><h1>Client Portal (Coming Soon)</h1></div>;
 
 
