@@ -58,7 +58,7 @@ export const LoginForm = () => {
     };
 
     return (
-        <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-primary animate-in fade-in zoom-in-95 duration-300">
+        <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-primary animate-in fade-in zoom-in-95 duration-300 bg-white relative">
             <CardHeader className="space-y-1 text-center">
                 <CardTitle className="text-2xl font-bold text-primary">Credia Enterprise</CardTitle>
                 <CardDescription>Secure Access Portal</CardDescription>
