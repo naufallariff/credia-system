@@ -16,6 +16,13 @@ export default defineConfig({
         },
     },
     server: {
-        port: 3000,
+        port: 3000, // Kita paksa jalan di port 3000 biar konsisten
+        proxy: {
+            '/api': {
+                target: 'http://localhost:5000', // TARGET BACKEND ANDA
+                changeOrigin: true,
+                secure: false,
+            }
+        }
     }
 });

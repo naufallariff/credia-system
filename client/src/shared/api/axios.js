@@ -19,9 +19,7 @@ api.interceptors.request.use(
         }
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
 // Response Interceptor: Menangani Global Error (misal: Token Expired)
@@ -31,10 +29,14 @@ api.interceptors.response.use(
         // Jika 401 Unauthorized (Token invalid/expired), logout user
         if (error.response && error.response.status === 401) {
             // Cek apakah bukan di halaman login agar tidak loop redirect
-            if (!window.location.pathname.includes('/login')) {
+            if (error.config.url.includes('/auth/login')) {
+                return Promise.reject(error);
+            }
+
+            if (!window.location.pathname.includes('/auth/login')) {
                 localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = '/login';
+                localStorage.removeItem('credia-session-storage');
+                window.location.href = '/auth/login';
             }
         }
         return Promise.reject(error);
