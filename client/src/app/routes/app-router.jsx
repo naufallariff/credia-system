@@ -8,7 +8,7 @@ import { DashboardPage } from '@/pages/dashboard/dashboard-page';
 const ClientDashboardPage = () => <div className="p-10"><h1>Client Portal (Coming Soon)</h1></div>;
 import { ContractListPage } from '@/pages/contract/contract-list-page';
 import { CreateContractPage } from '@/pages/contract/create-contract-page';
-
+import { ContractDetailPage } from '@/pages/contract/contract-detail-page';
 
 export const AppRouter = () => {
     return (
@@ -27,6 +27,7 @@ export const AppRouter = () => {
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/contracts" element={<ContractListPage />} />
                     <Route path="/contracts/new" element={<CreateContractPage />} />
+                    <Route path="/contracts/:id" element={<ContractDetailPage />} />
                     {/* Tambahkan rute lain sesuai kebutuhan */}
                 </Route>
 
