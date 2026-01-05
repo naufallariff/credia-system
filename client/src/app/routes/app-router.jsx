@@ -6,6 +6,8 @@ import { DashboardLayout } from '@/widgets/layout/dashboard-layout';
 // Placeholder Components (Will be replaced in next phase)
 import { DashboardPage } from '@/pages/dashboard/dashboard-page';
 const ClientDashboardPage = () => <div className="p-10"><h1>Client Portal (Coming Soon)</h1></div>;
+import { ContractListPage } from '@/pages/contract/contract-list-page';
+import { CreateContractPage } from '@/pages/contract/create-contract-page';
 
 
 export const AppRouter = () => {
@@ -23,8 +25,8 @@ export const AppRouter = () => {
                 }>
                     {/* Child Routes akan dirender di dalam <Outlet /> milik DashboardLayout */}
                     <Route path="/dashboard" element={<DashboardPage />} />
-                    <Route path="/contracts" element={<div>Contract List Page</div>} />
-                    <Route path="/contracts/new" element={<div>Create Contract Page</div>} />
+                    <Route path="/contracts" element={<ContractListPage />} />
+                    <Route path="/contracts/new" element={<CreateContractPage />} />
                     {/* Tambahkan rute lain sesuai kebutuhan */}
                 </Route>
 
