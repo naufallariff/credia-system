@@ -86,7 +86,10 @@ export const ContractDetailPage = () => {
                                 Track monthly installments and payment status.
                             </p>
                         </div>
-                        <AmortizationTable schedule={contract.amortization} />
+                        <AmortizationTable
+                            schedule={contract.amortization}
+                            contractId={contract._id}
+                        />
                     </div>
                 </TabsContent>
             </Tabs>
