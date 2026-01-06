@@ -10,6 +10,7 @@ import { CreateContractPage } from '@/pages/contract/create-contract-page';
 import { ContractDetailPage } from '@/pages/contract/contract-detail-page';
 import { ApprovalPage } from '@/pages/approval/approval-page';
 import { UserListPage } from '@/pages/user/user-list-page';
+import { ClientDashboardPage } from '@/pages/client/client-dashboard-page';
 
 export const AppRouter = () => {
     return (
@@ -31,6 +32,16 @@ export const AppRouter = () => {
                     <Route path="/contracts/:id" element={<ContractDetailPage />} />
                     {/* Tambahkan rute lain sesuai kebutuhan */}
                 </Route>
+
+                {/* --- CLIENT DASHBOARD PAGE (CLIENT ONLY) --- */}
+                <Route
+                    path="/client/dashboard"
+                    element={
+                        <ProtectedRoute allowedRoles={['CLIENT']}>
+                            <ClientDashboardPage />
+                        </ProtectedRoute>
+                    }
+                />
 
                 {/* --- APPROVAL PAGE (ADMIN/SUPERADMIN ONLY) --- */}
                 <Route
