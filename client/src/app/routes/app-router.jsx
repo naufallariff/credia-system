@@ -9,6 +9,7 @@ import { ContractListPage } from '@/pages/contract/contract-list-page';
 import { CreateContractPage } from '@/pages/contract/create-contract-page';
 import { ContractDetailPage } from '@/pages/contract/contract-detail-page';
 import { ApprovalPage } from '@/pages/approval/approval-page';
+import { UserListPage } from '@/pages/user/user-list-page';
 
 export const AppRouter = () => {
     return (
@@ -37,6 +38,16 @@ export const AppRouter = () => {
                     element={
                         <ProtectedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
                             <ApprovalPage />
+                        </ProtectedRoute>
+                    }
+                />
+
+                {/* --- USER MANAGEMENT PAGE (ADMIN/SUPERADMIN ONLY) --- */}
+                <Route
+                    path="/users"
+                    element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
+                            <UserListPage />
                         </ProtectedRoute>
                     }
                 />
