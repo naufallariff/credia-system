@@ -10,6 +10,8 @@ import { Badge } from '@/shared/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { getStatusColor, getStatusLabel } from '@/entities/contract/ui-mappers';
 
+import { AdminActionBar } from '@/widgets/contract/admin-action-bar';
+
 export const ContractDetailPage = () => {
     const navigate = useNavigate();
     const { data: contract, isLoading, isError } = useContractDetail();
@@ -54,6 +56,9 @@ export const ContractDetailPage = () => {
                         </p>
                     </div>
                 </div>
+
+                {/* --- Admin Action Bar --- */}
+                <AdminActionBar contractId={contract._id} status={contract.status} />
 
                 <div className="flex gap-2">
                     <Button variant="outline">

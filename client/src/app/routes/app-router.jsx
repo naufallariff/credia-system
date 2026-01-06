@@ -5,10 +5,10 @@ import { DashboardLayout } from '@/widgets/layout/dashboard-layout';
 
 // Placeholder Components (Will be replaced in next phase)
 import { DashboardPage } from '@/pages/dashboard/dashboard-page';
-const ClientDashboardPage = () => <div className="p-10"><h1>Client Portal (Coming Soon)</h1></div>;
 import { ContractListPage } from '@/pages/contract/contract-list-page';
 import { CreateContractPage } from '@/pages/contract/create-contract-page';
 import { ContractDetailPage } from '@/pages/contract/contract-detail-page';
+import { ApprovalPage } from '@/pages/approval/approval-page';
 
 export const AppRouter = () => {
     return (
@@ -30,6 +30,16 @@ export const AppRouter = () => {
                     <Route path="/contracts/:id" element={<ContractDetailPage />} />
                     {/* Tambahkan rute lain sesuai kebutuhan */}
                 </Route>
+
+                {/* --- APPROVAL PAGE (ADMIN/SUPERADMIN ONLY) --- */}
+                <Route
+                    path="/approvals"
+                    element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
+                            <ApprovalPage />
+                        </ProtectedRoute>
+                    }
+                />
 
                 <Route path="*" element={<Navigate to="/auth/login" replace />} />
             </Routes>
