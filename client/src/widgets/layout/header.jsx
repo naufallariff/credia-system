@@ -1,6 +1,7 @@
 import { LogOut, Bell, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@/shared/model/use-session';
+import { NotificationBell } from '@/widgets/layout/notification-bell';
 
 import {
     DropdownMenu,
@@ -31,10 +32,7 @@ export const Header = () => {
             {/* Right: Actions */}
             <div className="flex items-center gap-4">
                 {/* Notification Bell (Placeholder for now) */}
-                <Button variant="ghost" size="icon" className="relative text-slate-500 hover:text-primary hover:bg-primary/5">
-                    <Bell size={20} />
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-                </Button>
+                <NotificationBell />
 
                 <div className="h-6 w-px bg-slate-200 mx-1"></div>
 

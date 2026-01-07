@@ -1,10 +1,13 @@
+import { useState } from 'react'; // Pastikan useState diimport
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, UserPlus } from 'lucide-react';
 
-import { useCreateUser, CreateUserSchema } from '@/features/user/user-schema'; // Perbaiki import path jika perlu
-import { CreateUserSchema as Schema } from '@/features/user/user-schema';
-import { useCreateUser as useCreateUserHook } from '@/features/user/use-users';
+// --- PERBAIKAN IMPORT (FIXED SECTION) ---
+// 1. Import Schema dari file schema
+import { CreateUserSchema } from '@/features/user/user-schema';
+// 2. Import Hook dari file use-users (BUKAN dari schema)
+import { useCreateUser } from '@/features/user/use-users';
 
 import {
     Dialog,
@@ -24,14 +27,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/ui/select";
-import { useState } from 'react';
 
 export const CreateUserDialog = () => {
     const [open, setOpen] = useState(false);
-    const { mutate, isPending } = useCreateUserHook();
+
+    // Gunakan hook yang sudah diimport dengan benar
+    const { mutate, isPending } = useCreateUser();
 
     const form = useForm({
-        resolver: zodResolver(Schema),
+        resolver: zodResolver(CreateUserSchema),
         defaultValues: { role: 'CLIENT', name: '', username: '', email: '', password: '' }
     });
 
@@ -51,6 +55,7 @@ export const CreateUserDialog = () => {
                     <UserPlus className="mr-2 h-4 w-4" /> Add User
                 </Button>
             </DialogTrigger>
+            {/* ... Sisa kode ke bawah TETAP SAMA ... */}
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Create New Account</DialogTitle>
