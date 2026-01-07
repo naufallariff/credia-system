@@ -15,7 +15,7 @@ import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 
-export const PaymentModal = ({ contractId, installment, isOpen, onClose }) => {
+export const PaymentModal = ({ contractId, installment, isOpen, onClose, remainingLoan }) => {
     const { mutate, isPending } = useMakePayment();
     const [amount, setAmount] = useState(0);
 
@@ -26,6 +26,8 @@ export const PaymentModal = ({ contractId, installment, isOpen, onClose }) => {
             setAmount(installment.amount + (installment.penalty_paid || 0));
         }
     }, [installment]);
+
+    const maxPayment = remainingLoan || installment?.amount * 2;
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -84,18 +86,29 @@ export const PaymentModal = ({ contractId, installment, isOpen, onClose }) => {
                                 className="pl-9"
                                 required
                                 min={1}
+                                max={maxPayment}
                             />
                         </div>
-                        <p className="text-xs text-slate-500">
-                            Ensure the received amount matches the physical cash or transfer.
-                        </p>
+                        {/* Feedback Visual Error */}
+                        {parseFloat(amount) > maxPayment ? (
+                            <p className="text-xs text-red-500 font-medium">
+                                Amount exceeds remaining loan balance ({formatRupiah(maxPayment)}).
+                            </p>
+                        ) : (
+                            <p className="text-xs text-slate-500">
+                                Max payment allowed: {formatRupiah(maxPayment)}
+                            </p>
+                        )}
                     </div>
 
                     <DialogFooter>
+                        {/* Disable tombol jika amount invalid */}
                         <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={isPending}>
+                        <Button
+                            type="submit"
+                            disabled={isPending || parseFloat(amount) > maxPayment}>
                             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Confirm Payment
                         </Button>

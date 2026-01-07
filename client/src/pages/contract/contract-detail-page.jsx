@@ -89,6 +89,7 @@ export const ContractDetailPage = () => {
                         <AmortizationTable
                             schedule={contract.amortization}
                             contractId={contract._id}
+                            remainingLoan={contract.remaining_loan}
                         />
                     </div>
                 </TabsContent>

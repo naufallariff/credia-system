@@ -39,7 +39,7 @@ const getStatusIcon = (status) => {
     }
 };
 
-export const AmortizationTable = ({ schedule, contractId }) => {
+export const AmortizationTable = ({ schedule, contractId, remainingLoan }) => {
     const { user } = useSession();
     const [selectedInstallment, setSelectedInstallment] = useState(null);
 
@@ -116,6 +116,7 @@ export const AmortizationTable = ({ schedule, contractId }) => {
                 installment={selectedInstallment}
                 isOpen={!!selectedInstallment}
                 onClose={() => setSelectedInstallment(null)}
+                remainingLoan={remainingLoan}
             />
         </>
     );
