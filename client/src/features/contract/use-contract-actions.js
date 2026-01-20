@@ -8,24 +8,23 @@ export const useContractActions = () => {
 
     return useMutation({
         mutationFn: async ({ id, action, reason }) => {
-            // Determine new status based on action
+            // Map action to Backend Status Enum
             const newStatus = action === 'APPROVE' ? 'ACTIVE' : 'VOID';
 
-            // Sending payload to update contract status
             const payload = {
                 status: newStatus,
                 approval_notes: reason || null
             };
 
-            // Assuming standard REST pattern: PATCH /contracts/:id
+            // Sending PATCH request to trigger 'updateContractStatus' controller
             const response = await api.patch(`/contracts/${id}`, payload);
             return response.data;
         },
         onSuccess: (_, variables) => {
-            // Refresh related queries to update UI immediately
+            // Invalidate queries to refresh UI
             queryClient.invalidateQueries(['contract', variables.id]);
             queryClient.invalidateQueries(['contracts']);
-            queryClient.invalidateQueries(['dashboard-stats']);
+            queryClient.invalidateQueries(['dashboard-stats']); // Update stats
 
             toast({
                 title: variables.action === 'APPROVE' ? "Contract Activated" : "Contract Rejected",

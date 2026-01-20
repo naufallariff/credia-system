@@ -1,19 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData } from '@tanstack/react-query';
 import api from '@/shared/api/axios';
 
-/**
- * Hook to fetch contract list with optional filters.
- * Currently fetches all, prepared for server-side pagination.
- */
-export const useContracts = (filters = {}) => {
+export const useContracts = (page = 1, limit = 10, search = '') => {
     return useQuery({
-        queryKey: ['contracts', filters],
+        queryKey: ['contracts', page, limit, search],
         queryFn: async () => {
-            // In a real scenario, we would pass query params here
-            const response = await api.get('/contracts');
-            return response.data?.data?.contracts || [];
+            // Sending query params to match Backend Controller logic
+            const response = await api.get(`/contracts?page=${page}&limit=${limit}&search=${search}`);
+
+            // Default structure to prevent crash if backend response is empty
+            return response.data?.data || {
+                contracts: [],
+                pagination: {
+                    current_page: 1,
+                    total_pages: 1,
+                    has_next: false,
+                    has_prev: false
+                }
+            };
         },
-        staleTime: 30 * 1000, // Cache for 30 seconds
-        keepPreviousData: true,
+        placeholderData: keepPreviousData, // UX: Keep old data while fetching new page
+        staleTime: 5000,
     });
 };
