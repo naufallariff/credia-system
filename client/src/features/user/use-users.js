@@ -5,7 +5,7 @@ import { useToast } from '@/shared/hooks/use-toast';
 // 1. Fetch All Users
 export const useUsers = () => {
     return useQuery({
-        queryKey: ['users-list'],
+        queryKey: ['users'], // Standardized key
         queryFn: async () => {
             const response = await api.get('/users');
             return response.data?.data || [];
@@ -21,12 +21,17 @@ export const useCreateUser = () => {
 
     return useMutation({
         mutationFn: async (userData) => {
-            const response = await api.post('/auth/register', userData); // Assuming register endpoint handles creation
+            // Ensure endpoint matches backend route (e.g., /users or /auth/register)
+            const response = await api.post('/auth/register', userData);
             return response.data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['users-list']);
-            toast({ title: "User Created", description: "New account has been successfully registered." });
+            // Invalidate 'users' query to refetch list automatically
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            toast({
+                title: "User Created",
+                description: "New account has been successfully registered."
+            });
         },
         onError: (error) => {
             toast({

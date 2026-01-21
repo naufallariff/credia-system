@@ -4,28 +4,30 @@ import { Button } from '@/shared/ui/button';
 export const PaginationControls = ({
     currentPage,
     totalPages,
-    onPageChange,
-    hasNext,
     hasPrev,
+    hasNext,
+    onPageChange,
     isLoading
 }) => {
     return (
-        <div className="flex items-center justify-between px-2 py-4 border-t border-slate-100">
-            <div className="text-sm text-slate-500">
-                Page <span className="font-medium text-slate-900">{currentPage}</span> of{" "}
-                <span className="font-medium text-slate-900">{totalPages || 1}</span>
+        <div className="flex items-center justify-between px-4 py-4 bg-card">
+            {/* Info Halaman (Kiri) */}
+            <div className="text-sm text-muted-foreground">
+                Showing page <span className="font-medium text-foreground">{currentPage}</span> of{' '}
+                <span className="font-medium text-foreground">{totalPages}</span>
             </div>
 
+            {/* Tombol Navigasi (Kanan) */}
             <div className="flex items-center gap-2">
                 <Button
                     variant="outline"
                     size="sm"
                     onClick={() => onPageChange(currentPage - 1)}
                     disabled={!hasPrev || isLoading}
-                    className="h-8 w-8 p-0"
+                    className="h-8 w-8 p-0 lg:w-auto lg:px-4 lg:h-9 bg-background hover:bg-accent border-border"
                 >
-                    <ChevronLeft className="h-4 w-4" />
-                    <span className="sr-only">Previous</span>
+                    <ChevronLeft className="h-4 w-4 lg:mr-2" />
+                    <span className="hidden lg:inline">Previous</span>
                 </Button>
 
                 <Button
@@ -33,10 +35,10 @@ export const PaginationControls = ({
                     size="sm"
                     onClick={() => onPageChange(currentPage + 1)}
                     disabled={!hasNext || isLoading}
-                    className="h-8 w-8 p-0"
+                    className="h-8 w-8 p-0 lg:w-auto lg:px-4 lg:h-9 bg-background hover:bg-accent border-border"
                 >
-                    <ChevronRight className="h-4 w-4" />
-                    <span className="sr-only">Next</span>
+                    <span className="hidden lg:inline">Next</span>
+                    <ChevronRight className="h-4 w-4 lg:ml-2" />
                 </Button>
             </div>
         </div>

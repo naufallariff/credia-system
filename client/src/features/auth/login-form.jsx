@@ -19,7 +19,6 @@ export const LoginForm = () => {
     const { setSession } = useSession();
     const [globalError, setGlobalError] = useState('');
 
-    // Form Initialization with Zod Validation
     const {
         register,
         handleSubmit,
@@ -28,11 +27,9 @@ export const LoginForm = () => {
         resolver: zodResolver(LoginSchema),
     });
 
-    // Handler: Submit Logic
     const onSubmit = async (data) => {
         setGlobalError('');
         try {
-            // Execute API Call
             const response = await api.post('/auth/login', {
                 identifier: data.identifier,
                 password: data.password,
@@ -40,28 +37,25 @@ export const LoginForm = () => {
 
             const { user, token } = response.data.data;
 
-            // Update Global State
             setSession(user, token);
-            localStorage.setItem('token', token); // Sync for Axios Interceptor
+            localStorage.setItem('token', token);
 
-            // Redirect based on Role (Smart Routing)
             if (user.role === 'CLIENT') {
                 navigate('/client/dashboard');
             } else {
                 navigate('/dashboard');
             }
         } catch (error) {
-            // Secure Error Handling
             const msg = error.response?.data?.message || 'Authentication failed. Please try again.';
             setGlobalError(msg);
         }
     };
 
     return (
-        <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-primary animate-in fade-in zoom-in-95 duration-300 bg-white relative">
+        <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-primary animate-in fade-in zoom-in-95 duration-300 bg-card">
             <CardHeader className="space-y-1 text-center">
                 <CardTitle className="text-2xl font-bold text-primary">Credia Enterprise</CardTitle>
-                <CardDescription>Secure Access Portal</CardDescription>
+                <CardDescription className="text-muted-foreground">Secure Access Portal</CardDescription>
             </CardHeader>
 
             <CardContent>
@@ -82,10 +76,10 @@ export const LoginForm = () => {
                             placeholder="admin@credia.com"
                             disabled={isSubmitting}
                             {...register('identifier')}
-                            className={errors.identifier ? "border-red-500 focus-visible:ring-red-500" : ""}
+                            className={`bg-background ${errors.identifier ? "border-destructive focus-visible:ring-destructive" : ""}`}
                         />
                         {errors.identifier && (
-                            <p className="text-xs text-red-500 font-medium">{errors.identifier.message}</p>
+                            <p className="text-xs text-destructive font-medium">{errors.identifier.message}</p>
                         )}
                     </div>
 
@@ -101,14 +95,13 @@ export const LoginForm = () => {
                             placeholder="••••••••"
                             disabled={isSubmitting}
                             {...register('password')}
-                            className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
+                            className={`bg-background ${errors.password ? "border-destructive focus-visible:ring-destructive" : ""}`}
                         />
                         {errors.password && (
-                            <p className="text-xs text-red-500 font-medium">{errors.password.message}</p>
+                            <p className="text-xs text-destructive font-medium">{errors.password.message}</p>
                         )}
                     </div>
 
-                    {/* Submit Button */}
                     <Button type="submit" className="w-full font-bold" disabled={isSubmitting}>
                         {isSubmitting ? (
                             <>
@@ -122,7 +115,7 @@ export const LoginForm = () => {
                 </form>
             </CardContent>
 
-            <CardFooter className="text-center text-xs text-muted-foreground">
+            <CardFooter className="text-center text-xs text-muted-foreground flex justify-center">
                 <p>Protected by reCAPTCHA and Credia Security Protocols.</p>
             </CardFooter>
         </Card>

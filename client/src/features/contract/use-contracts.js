@@ -6,10 +6,8 @@ export const useContracts = (page = 1, limit = 10, search = '') => {
     return useQuery({
         queryKey: ['contracts', page, limit, search],
         queryFn: async () => {
-            // Sending query params to match Backend Controller logic
             const response = await api.get(`/contracts?page=${page}&limit=${limit}&search=${search}`);
 
-            // Default structure to prevent crash if backend response is empty
             return response.data?.data || {
                 contracts: [],
                 pagination: {
@@ -20,7 +18,7 @@ export const useContracts = (page = 1, limit = 10, search = '') => {
                 }
             };
         },
-        placeholderData: keepPreviousData, // UX: Keep old data while fetching new page
+        placeholderData: keepPreviousData,
         staleTime: 5000,
     });
 };

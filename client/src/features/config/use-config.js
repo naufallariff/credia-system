@@ -8,10 +8,9 @@ export const useConfig = () => {
         queryKey: ['global-config'],
         queryFn: async () => {
             const response = await api.get('/config');
-            // Return data directly or default object structure if empty
             return response.data?.data || {};
         },
-        staleTime: 5 * 60 * 1000, // Cache for 5 minutes (rarely changes)
+        staleTime: 5 * 60 * 1000,
     });
 };
 

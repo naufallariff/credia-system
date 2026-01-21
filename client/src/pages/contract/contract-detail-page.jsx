@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 // --- WIDGET IMPORTS ---
 import { AdminActionBar } from '@/widgets/contract/admin-action-bar';
 import { AmortizationTable } from '@/widgets/contract/amortization-table';
-import { PrintContractButton } from '@/widgets/contract/print-contract-button'; // <--- IMPORT INI
+import { PrintContractButton } from '@/widgets/contract/print-contract-button';
+import { ContractInfo } from '@/widgets/contract/contract-info'; // Pastikan ini diimport
 
 export const ContractDetailPage = () => {
     const { id } = useParams();
@@ -18,7 +19,7 @@ export const ContractDetailPage = () => {
     const { data: contract, isLoading, error } = useContractDetail(id);
 
     if (isLoading) return <DetailSkeleton />;
-    if (error) return <div className="p-8 text-center text-red-500">Failed to load contract.</div>;
+    if (error) return <div className="p-8 text-center text-destructive">Failed to load contract details.</div>;
 
     return (
         <div className="space-y-6 max-w-6xl mx-auto pb-10">
@@ -26,23 +27,25 @@ export const ContractDetailPage = () => {
             {/* --- HEADER SECTION --- */}
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div className="space-y-1">
-                    <Button variant="ghost" className="pl-0 hover:pl-0 hover:bg-transparent text-slate-500" onClick={() => navigate(-1)}>
+                    <Button variant="ghost" className="pl-0 hover:pl-0 hover:bg-transparent text-muted-foreground hover:text-foreground" onClick={() => navigate(-1)}>
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Directory
                     </Button>
 
                     <div className="flex items-center gap-3">
-                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                        <h1 className="text-3xl font-bold text-foreground tracking-tight">
                             {contract.contract_no || 'New Application'}
                         </h1>
-                        <Badge className={
-                            contract.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                                contract.status === 'VOID' ? 'bg-red-100 text-red-700' :
-                                    'bg-amber-100 text-amber-700 border-amber-200'
+                        <Badge variant="outline" className={
+                            contract.status === 'ACTIVE'
+                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                : contract.status === 'VOID'
+                                    ? 'bg-destructive/15 text-destructive border-destructive/20'
+                                    : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20'
                         }>
                             {contract.status}
                         </Badge>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-slate-500">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1"><User className="h-3 w-3" /> {contract.client?.name}</span>
                         <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {contract.duration_month} Months</span>
                     </div>
@@ -50,36 +53,46 @@ export const ContractDetailPage = () => {
 
                 {/* --- ACTION BUTTONS (TOP RIGHT) --- */}
                 <div className="flex items-center gap-2">
-                    {/* Tombol Cetak PDF */}
                     <PrintContractButton contract={contract} />
 
-                    {/* Tombol Edit (Hanya jika masih draft, opsional) */}
                     {contract.status === 'PENDING_ACTIVATION' && (
                         <Button variant="secondary">Edit Details</Button>
                     )}
                 </div>
             </div>
 
-            {/* --- ADMIN ACTION BAR (Approval Workflow) --- */}
+            {/* --- ADMIN ACTION BAR --- */}
             <AdminActionBar contractId={contract._id} status={contract.status} />
 
             {/* --- MAIN TABS --- */}
             <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent gap-6">
-                    <TabsTrigger value="overview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none py-3 px-1">Overview</TabsTrigger>
-                    <TabsTrigger value="schedule" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none py-3 px-1">Amortization Schedule</TabsTrigger>
-                    <TabsTrigger value="documents" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none py-3 px-1">Documents</TabsTrigger>
+                <TabsList className="w-full justify-start border-b border-border rounded-none h-auto p-0 bg-transparent gap-6">
+                    <TabsTrigger
+                        value="overview"
+                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none py-3 px-1 text-muted-foreground"
+                    >
+                        Overview
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="schedule"
+                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none py-3 px-1 text-muted-foreground"
+                    >
+                        Amortization Schedule
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="documents"
+                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none py-3 px-1 text-muted-foreground"
+                    >
+                        Documents
+                    </TabsTrigger>
                 </TabsList>
 
                 <div className="mt-6">
-                    <TabsContent value="overview">
-                        {/* ... Isi Overview Component Anda (Summary Card, Client Info Card) ... */}
-                        <div className="p-4 bg-slate-50 border rounded-lg text-center text-slate-500">
-                            Loan Overview Component Placeholder
-                        </div>
+                    <TabsContent value="overview" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <ContractInfo contract={contract} />
                     </TabsContent>
 
-                    <TabsContent value="schedule">
+                    <TabsContent value="schedule" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                         <AmortizationTable
                             schedule={contract.amortization}
                             contractId={contract._id}
@@ -87,8 +100,8 @@ export const ContractDetailPage = () => {
                         />
                     </TabsContent>
 
-                    <TabsContent value="documents">
-                        <div className="p-10 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-slate-400 bg-slate-50/50">
+                    <TabsContent value="documents" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <div className="p-10 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center text-muted-foreground bg-muted/30">
                             <FileText className="h-10 w-10 mb-2 opacity-50" />
                             <p>Uploaded documents (KTP, KK, Slip Gaji) will appear here.</p>
                         </div>
@@ -101,7 +114,7 @@ export const ContractDetailPage = () => {
 
 const DetailSkeleton = () => (
     <div className="space-y-6 max-w-5xl mx-auto pt-10">
-        <Skeleton className="h-8 w-1/3" />
-        <Skeleton className="h-[200px] w-full" />
+        <Skeleton className="h-8 w-1/3 bg-muted" />
+        <Skeleton className="h-[200px] w-full bg-muted" />
     </div>
 );

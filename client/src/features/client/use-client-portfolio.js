@@ -8,8 +8,7 @@ export const useClientPortfolio = () => {
     return useQuery({
         queryKey: ['client-portfolio', user?._id],
         queryFn: async () => {
-            // In a real strict backend, we should hit /api/client/my-contracts
-            // For now, we fetch contracts and filter by client ID client-side
+            // Note: In production, specific endpoint like /api/client/my-contracts is preferred
             const response = await api.get('/contracts');
             const allContracts = response.data?.data?.contracts || [];
 
@@ -21,11 +20,9 @@ export const useClientPortfolio = () => {
             let nextDueDate = null;
 
             if (activeContract) {
-                // Calculate remaining from schedule
                 const unpaidSchedules = activeContract.amortization.filter(s => s.status !== 'PAID');
                 totalRemaining = unpaidSchedules.reduce((sum, item) => sum + item.amount, 0);
 
-                // Find immediate next due date
                 const nextBill = unpaidSchedules.find(s => s.status !== 'PAID');
                 nextDueDate = nextBill ? nextBill.due_date : null;
             }

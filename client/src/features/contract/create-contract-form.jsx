@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Save, Calculator, ArrowRight, Lock } from 'lucide-react';
+import { Loader2, Calculator, Lock } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import api from '@/shared/api/axios';
@@ -14,7 +14,7 @@ import { formatRupiah } from '@/entities/contract/model';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/shared/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/shared/ui/card';
 import { Separator } from '@/shared/ui/separator';
 import {
     Select,
@@ -30,11 +30,9 @@ export const CreateContractForm = () => {
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
-    // 1. Fetch Dependencies
     const { data: clients, isLoading: loadingClients } = useClients();
     const { data: config } = useConfig();
 
-    // 2. Form Setup
     const form = useForm({
         resolver: zodResolver(CreateContractSchema),
         defaultValues: {
@@ -48,7 +46,7 @@ export const CreateContractForm = () => {
 
     const otrPrice = form.watch('otr_price');
 
-    // 3. AUTO-LOGIC
+    // Auto-Logic: Config & DP
     useEffect(() => {
         if (config) {
             form.setValue('interest_rate', config.interest_rate_default || 12, { shouldValidate: true });
@@ -63,7 +61,7 @@ export const CreateContractForm = () => {
         }
     }, [config, otrPrice, form]);
 
-    // 4. Calculation
+    // Calculation Engine
     const formValues = form.watch();
     const simulation = useMemo(() => {
         const otr = Number(formValues.otr_price) || 0;
@@ -79,7 +77,6 @@ export const CreateContractForm = () => {
         return { principal, totalInterest, totalLoan, monthlyInstallment };
     }, [formValues]);
 
-    // 5. Mutation
     const mutation = useMutation({
         mutationFn: (data) => api.post('/contracts', data),
         onSuccess: () => {
@@ -145,6 +142,7 @@ export const CreateContractForm = () => {
                                     <Input
                                         type="number"
                                         placeholder="e.g. 50000000"
+                                        className="bg-background"
                                         {...form.register('otr_price')}
                                     />
                                     {formValues.otr_price > 0 && (
@@ -159,6 +157,7 @@ export const CreateContractForm = () => {
                                     <Input
                                         type="number"
                                         placeholder={`Min ${minDpPercent}% of OTR`}
+                                        className="bg-background"
                                         {...form.register('dp_amount')}
                                     />
                                     {formValues.dp_amount > 0 && (
@@ -195,7 +194,6 @@ export const CreateContractForm = () => {
                                         Interest Rate (%/Year)
                                         <Lock className="h-3 w-3 text-muted-foreground" />
                                     </Label>
-                                    {/* FIX: Ganti class hardcoded bg-slate-100 menjadi bg-muted */}
                                     <Input
                                         type="number"
                                         readOnly

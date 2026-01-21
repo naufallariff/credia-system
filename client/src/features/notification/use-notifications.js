@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/shared/api/axios';
 
-// Fetch Notifications with Polling
 export const useNotifications = () => {
     return useQuery({
         queryKey: ['notifications'],
@@ -10,33 +9,29 @@ export const useNotifications = () => {
                 const response = await api.get('/notifications');
                 return response.data?.data || [];
             } catch (error) {
-                console.warn("Failed to fetch notifications:", error);
+                // Return empty array to prevent UI crash on notification service failure
                 return [];
             }
         },
-        refetchInterval: 30000,
+        refetchInterval: 30000, // Poll every 30s
         staleTime: 10000,
         initialData: [],
     });
 };
 
-// Mark as Read Mutation
 export const useMarkAsRead = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (id) => {
-            // Assuming PATCH /notifications/:id/read endpoint
             await api.patch(`/notifications/${id}/read`);
         },
         onSuccess: () => {
-            // Refresh list immediately after marking as read
-            queryClient.invalidateQueries(['notifications']);
+            queryClient.invalidateQueries({ queryKey: ['notifications'] });
         }
     });
 };
 
-// Mark ALL as Read Mutation
 export const useMarkAllRead = () => {
     const queryClient = useQueryClient();
 
@@ -45,7 +40,7 @@ export const useMarkAllRead = () => {
             await api.patch('/notifications/read-all');
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['notifications']);
+            queryClient.invalidateQueries({ queryKey: ['notifications'] });
         }
     });
 };

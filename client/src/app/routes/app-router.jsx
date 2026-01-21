@@ -25,12 +25,11 @@ const ClientDashboardPage = lazy(() => import('@/pages/client/client-dashboard-p
 
 // --- LOADING FALLBACK COMPONENT ---
 const PageLoader = () => (
-    <div className="flex flex-col items-center justify-center h-screen w-full bg-slate-50 text-slate-400 gap-2">
+    <div className="flex flex-col items-center justify-center h-screen w-full bg-background text-muted-foreground gap-2">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="text-sm font-medium">Loading Application...</p>
     </div>
 );
-
 export const AppRouter = () => {
     return (
         <BrowserRouter>

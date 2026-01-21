@@ -8,7 +8,6 @@ export const useMakePayment = () => {
 
     return useMutation({
         mutationFn: async ({ contractId, month, amount }) => {
-            // Endpoint: POST /api/contracts/:id/payment
             const response = await api.post(`/contracts/${contractId}/payment`, {
                 month,
                 amount
@@ -16,10 +15,14 @@ export const useMakePayment = () => {
             return response.data;
         },
         onSuccess: (_, variables) => {
-            // Invalidate specific contract to refresh the schedule UI
-            queryClient.invalidateQueries(['contract', variables.contractId]);
-            // Invalidate dashboard stats to reflect revenue
-            queryClient.invalidateQueries(['dashboard-stats']);
+            // 1. Refresh specific contract detail
+            queryClient.invalidateQueries({ queryKey: ['contract', variables.contractId] });
+
+            // 2. Refresh contracts list
+            queryClient.invalidateQueries({ queryKey: ['contracts'] });
+
+            // 3. Refresh dashboard stats (revenue update)
+            queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
 
             toast({
                 title: "Payment Recorded",
@@ -28,9 +31,9 @@ export const useMakePayment = () => {
         },
         onError: (error) => {
             toast({
+                variant: "destructive",
                 title: "Payment Failed",
                 description: error.response?.data?.message || "Transaction could not be processed.",
-                variant: "destructive",
             });
         }
     });
