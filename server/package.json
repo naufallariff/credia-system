@@ -2,11 +2,11 @@
   "name": "credia-server-core",
   "version": "1.0.0",
   "description": "Core Backend API for Credia System - Professional Loan Management",
-  "main": "src/server.js", 
+  "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node src/seeder.js",
+    "seed": "node src/seeders/runner.js",
     "test": "node tests/run_all.js"
   },
   "keywords": [
@@ -19,6 +19,7 @@
   "license": "MIT",
   "type": "commonjs",
   "dependencies": {
+    "@faker-js/faker": "^10.2.0",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "colors": "^1.4.0",
@@ -30,12 +31,12 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "mongo-sanitize": "^1.1.0",
-    "mongoose": "^9.0.2",
+    "mongoose": "^9.1.5",
     "morgan": "^1.10.1",
     "nodemailer": "^7.0.12",
     "zod": "^4.2.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.0" 
+    "nodemon": "^3.0.0"
   }
 }
