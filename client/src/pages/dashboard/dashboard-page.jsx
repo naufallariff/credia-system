@@ -1,14 +1,18 @@
 import { useSession } from '@/shared/model/use-session';
 import { useDashboardStats } from '@/features/dashboard/use-dashboard-stats';
 import { StatCards } from '@/widgets/dashboard/stat-cards';
+import { RevenueChart } from '@/widgets/dashboard/revenue-chart'; // Import Baru
+import { RecentActivity } from '@/widgets/dashboard/recent-activity'; // Import Baru
 import { Button } from '@/shared/ui/button';
-import { PlusCircle, BarChart3, Activity } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const DashboardPage = () => {
     const { user } = useSession();
     const navigate = useNavigate();
 
+    // Pastikan useDashboardStats Anda sudah mengembalikan 'recentContracts'
+    // (Seperti yang kita perbaiki di langkah sebelumnya)
     const { data: stats, isLoading, isError } = useDashboardStats(user?.role);
 
     if (isError) {
@@ -21,7 +25,7 @@ export const DashboardPage = () => {
 
     return (
         <div className="space-y-6">
-            {/* 1. Page Header */}
+            {/* 1. Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground tracking-tight">Overview</h1>
@@ -38,25 +42,21 @@ export const DashboardPage = () => {
                 )}
             </div>
 
-            {/* 2. Key Performance Indicators */}
+            {/* 2. Stats Cards */}
             <section>
                 <StatCards stats={stats} isLoading={isLoading} userRole={user?.role} />
             </section>
 
-            {/* 3. Secondary Content Area */}
+            {/* 3. Charts & Activity (Dulu Placeholder) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Reduced height to make it look tighter */}
-                <div className="lg:col-span-2 bg-card rounded-xl border border-border h-[200px] flex flex-col items-center justify-center text-muted-foreground shadow-sm relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-transparent to-muted/20 pointer-events-none" />
-                    <BarChart3 className="h-8 w-8 mb-2 opacity-20" />
-                    <p className="font-medium text-sm">Revenue Analytics</p>
-                    <p className="text-[10px] opacity-70">(Coming Soon in Phase 2)</p>
+                {/* Kolom Kiri (2/3): Grafik */}
+                <div className="lg:col-span-2">
+                    <RevenueChart />
                 </div>
-                <div className="bg-card rounded-xl border border-border h-[200px] flex flex-col items-center justify-center text-muted-foreground shadow-sm relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-transparent to-muted/20 pointer-events-none" />
-                    <Activity className="h-8 w-8 mb-2 opacity-20" />
-                    <p className="font-medium text-sm">Recent Activity Log</p>
-                    <p className="text-[10px] opacity-70">(Coming Soon in Phase 2)</p>
+                
+                {/* Kolom Kanan (1/3): Aktivitas */}
+                <div className="lg:col-span-1">
+                    <RecentActivity activities={stats?.recentContracts} />
                 </div>
             </div>
         </div>

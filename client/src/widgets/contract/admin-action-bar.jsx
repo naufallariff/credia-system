@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react';
 import { useSession } from '@/shared/model/use-session';
 import { useContractActions } from '@/features/contract/use-contract-actions';
 
@@ -23,18 +23,35 @@ export const AdminActionBar = ({ contractId, status }) => {
     const { mutate, isPending } = useContractActions();
     const [rejectReason, setRejectReason] = useState('');
 
-    const isAdmin = ['ADMIN', 'SUPERADMIN'].includes(user?.role);
+    // --- RBAC LOGIC ---
+    const isApprover = ['ADMIN', 'SUPERADMIN'].includes(user?.role);
     const isPendingActivation = status === 'PENDING_ACTIVATION';
 
-    if (!isAdmin || !isPendingActivation) return null;
+    // 1. If contract is not pending, no actions needed.
+    if (!isPendingActivation) return null;
 
-    const handleApprove = () => {
-        mutate({ id: contractId, action: 'APPROVE' });
-    };
+    // 2. STAFF VIEW (Maker): Information Only
+    // Staff can see the status but cannot perform actions.
+    if (!isApprover) {
+        return (
+            <Card className="border-l-4 border-l-blue-500 bg-blue-500/10 shadow-sm mb-6 border-border">
+                <CardContent className="p-4 flex items-center gap-3">
+                    <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <div>
+                        <h3 className="font-bold text-foreground">Waiting for Approval</h3>
+                        <p className="text-sm text-muted-foreground">
+                            This application is currently being reviewed by the Risk/Finance team.
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
-    const handleReject = () => {
-        mutate({ id: contractId, action: 'REJECT', reason: rejectReason });
-    };
+    // 3. ADMIN VIEW (Checker): Actionable Buttons
+    // Handlers
+    const handleApprove = () => mutate({ id: contractId, action: 'APPROVE' });
+    const handleReject = () => mutate({ id: contractId, action: 'REJECT', reason: rejectReason });
 
     return (
         <Card className="border-l-4 border-l-amber-500 bg-amber-500/10 shadow-md mb-6 border-border">
@@ -44,15 +61,15 @@ export const AdminActionBar = ({ contractId, status }) => {
                         <AlertTriangle className="h-5 w-5" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-foreground">Approval Required</h3>
+                        <h3 className="font-bold text-foreground">Approval Action Required</h3>
                         <p className="text-sm text-muted-foreground">
-                            This contract is waiting for activation. Please review the details carefully.
+                            Please validate the client's creditworthiness before activation.
                         </p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {/* Reject Button */}
+                    {/* REJECT FLOW */}
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive bg-background">
@@ -61,14 +78,14 @@ export const AdminActionBar = ({ contractId, status }) => {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Reject Contract Application?</AlertDialogTitle>
+                                <AlertDialogTitle>Reject Application</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action cannot be undone. The contract will be marked as VOID.
+                                    This action is irreversible. The contract will be marked as VOID.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <div className="py-2">
                                 <Textarea
-                                    placeholder="Enter reason for rejection..."
+                                    placeholder="Reason for rejection (Required for Audit Log)..."
                                     value={rejectReason}
                                     onChange={(e) => setRejectReason(e.target.value)}
                                     className="bg-background"
@@ -79,7 +96,7 @@ export const AdminActionBar = ({ contractId, status }) => {
                                 <AlertDialogAction
                                     onClick={handleReject}
                                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    disabled={!rejectReason}
+                                    disabled={!rejectReason || isPending}
                                 >
                                     Confirm Reject
                                 </AlertDialogAction>
@@ -87,7 +104,7 @@ export const AdminActionBar = ({ contractId, status }) => {
                         </AlertDialogContent>
                     </AlertDialog>
 
-                    {/* Approve Button */}
+                    {/* APPROVE FLOW */}
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:text-white">
@@ -96,15 +113,19 @@ export const AdminActionBar = ({ contractId, status }) => {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Activate Contract?</AlertDialogTitle>
+                                <AlertDialogTitle>Authorize Disbursement?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This will generate the official payment schedule and allow the client to start payments.
+                                    By approving, you confirm that all KYC and risk checks have been passed. This will generate the payment schedule.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleApprove} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                                    Yes, Activate
+                                <AlertDialogAction
+                                    onClick={handleApprove}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    disabled={isPending}
+                                >
+                                    {isPending ? 'Processing...' : 'Yes, Activate Contract'}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>

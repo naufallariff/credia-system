@@ -8,6 +8,7 @@ import { DashboardLayout } from '@/widgets/layout/dashboard-layout';
 // --- LAZY IMPORTS (Optimasi Performa) ---
 // Menggunakan teknik Named Export: .then(module => ({ default: module.ComponentName }))
 const LoginPage = lazy(() => import('@/pages/auth/login-page').then(m => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import('@/pages/auth/register-page').then(m => ({ default: m.RegisterPage })));
 
 // Core Modules
 const DashboardPage = lazy(() => import('@/pages/dashboard/dashboard-page').then(m => ({ default: m.DashboardPage })));
@@ -37,6 +38,7 @@ export const AppRouter = () => {
                 <Routes>
                     {/* Public Routes */}
                     <Route path="/auth/login" element={<LoginPage />} />
+                    <Route path="/auth/register" element={<RegisterPage />} />
 
                     {/* Protected Layout Routes */}
                     <Route element={
