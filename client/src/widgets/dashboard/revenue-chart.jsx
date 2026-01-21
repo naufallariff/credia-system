@@ -3,8 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/shared/ui/card';
 import { BarChart3 } from 'lucide-react';
 import { formatRupiah } from '@/entities/contract/model';
 
-// Dummy Data Generator (Simulasi data 6 bulan terakhir)
-// Nanti ini bisa diganti dengan data real dari API
+// Dummy Data
 const data = [
     { name: 'Jan', total: 15000000 },
     { name: 'Feb', total: 28000000 },
@@ -17,9 +16,9 @@ const data = [
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-popover border border-border p-3 rounded-lg shadow-lg">
-                <p className="text-sm font-semibold text-foreground mb-1">{label}</p>
-                <p className="text-sm text-primary font-mono">
+            <div className="bg-popover/95 backdrop-blur-sm border border-border p-3 rounded-lg shadow-lg text-sm">
+                <p className="font-medium text-foreground mb-1">{label}</p>
+                <p className="text-sm text-primary font-bold font-mono">
                     {formatRupiah(payload[0].value)}
                 </p>
             </div>
@@ -30,8 +29,9 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export const RevenueChart = () => {
     return (
-        <Card className="col-span-2 h-[400px] flex flex-col bg-card border-border shadow-sm">
-            <CardHeader className="pb-4">
+        // FIX: Tinggi 450px
+        <Card className="col-span-2 h-[450px] flex flex-col bg-card border-border shadow-sm overflow-hidden">
+            <CardHeader className="pb-2 border-b border-border/40 bg-muted/20">
                 <div className="flex items-center justify-between">
                     <div className="space-y-1">
                         <CardTitle className="flex items-center gap-2 text-base font-bold text-foreground">
@@ -45,17 +45,17 @@ export const RevenueChart = () => {
                 </div>
             </CardHeader>
 
-            <CardContent className="flex-1 min-h-0 pb-2">
+            <CardContent className="flex-1 min-h-0 p-6">
                 <div className="w-full h-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                        <AreaChart data={data} margin={{ top: 20, right: 0, left: -10, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
                                     <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border)/0.5)" />
                             <XAxis
                                 dataKey="name"
                                 stroke="hsl(var(--muted-foreground))"
@@ -66,20 +66,21 @@ export const RevenueChart = () => {
                             />
                             <YAxis
                                 stroke="hsl(var(--muted-foreground))"
-                                fontSize={12}
+                                fontSize={11}
                                 tickLine={false}
                                 axisLine={false}
                                 tickFormatter={(value) => `Rp ${value / 1000000}M`}
                                 dx={-10}
                             />
-                            <Tooltip content={<CustomTooltip />} />
+                            <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1 }} />
                             <Area
-                                type="monotone"
+                                type="monotone" // Spline Curve
                                 dataKey="total"
                                 stroke="hsl(var(--primary))"
-                                strokeWidth={2}
+                                strokeWidth={3}
                                 fillOpacity={1}
                                 fill="url(#colorTotal)"
+                                activeDot={{ r: 6, strokeWidth: 0 }}
                             />
                         </AreaChart>
                     </ResponsiveContainer>

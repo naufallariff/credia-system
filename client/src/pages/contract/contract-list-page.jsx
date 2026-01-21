@@ -48,12 +48,12 @@ export const ContractListPage = () => {
             </div>
 
             {/* TABEL + PAGINATION SECTION */}
-            <div className="bg-card rounded-xl border border-border shadow-sm flex flex-col overflow-hidden relative min-h-[400px]">
+            <div className="bg-card rounded-xl border border-border shadow-sm relative min-h-[250px] overflow-hidden flex flex-col">
                 
                 {isLoading && !isPlaceholderData && (
-                   <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10 backdrop-blur-sm">
-                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                   </div>
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10 backdrop-blur-sm">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
                 )}
                 
                 <div className="flex-1">

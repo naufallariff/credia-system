@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Clock, ShieldAlert } from 'lucide-react';
 import { useSession } from '@/shared/model/use-session';
 import { useContractActions } from '@/features/contract/use-contract-actions';
 
@@ -23,24 +23,36 @@ export const AdminActionBar = ({ contractId, status }) => {
     const { mutate, isPending } = useContractActions();
     const [rejectReason, setRejectReason] = useState('');
 
-    // --- RBAC LOGIC ---
-    const isApprover = ['ADMIN', 'SUPERADMIN'].includes(user?.role);
     const isPendingActivation = status === 'PENDING_ACTIVATION';
 
-    // 1. If contract is not pending, no actions needed.
+    // 1. Guard Clause: Jika status bukan pending, tidak perlu render apa-apa
     if (!isPendingActivation) return null;
 
-    // 2. STAFF VIEW (Maker): Information Only
-    // Staff can see the status but cannot perform actions.
-    if (!isApprover) {
+    // --- RBAC LOGIC UPDATE ---
+    // Hanya Role 'ADMIN' yang boleh eksekusi. 
+    // Superadmin dan Staff hanya View Only.
+    const canApprove = user?.role === 'ADMIN';
+    const isSuperAdmin = user?.role === 'SUPERADMIN';
+
+    // 2. VIEW ONLY MODE (Staff & Superadmin)
+    if (!canApprove) {
         return (
             <Card className="border-l-4 border-l-blue-500 bg-blue-500/10 shadow-sm mb-6 border-border">
                 <CardContent className="p-4 flex items-center gap-3">
-                    <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    {isSuperAdmin ? (
+                        <ShieldAlert className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    ) : (
+                        <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    )}
+
                     <div>
-                        <h3 className="font-bold text-foreground">Waiting for Approval</h3>
+                        <h3 className="font-bold text-foreground">
+                            {isSuperAdmin ? "Superadmin Access (View Only)" : "Waiting for Approval"}
+                        </h3>
                         <p className="text-sm text-muted-foreground">
-                            This application is currently being reviewed by the Risk/Finance team.
+                            {isSuperAdmin
+                                ? "Operational approvals are restricted to Finance Admins for audit compliance."
+                                : "This application is currently being reviewed by the Finance team."}
                         </p>
                     </div>
                 </CardContent>
@@ -48,8 +60,7 @@ export const AdminActionBar = ({ contractId, status }) => {
         );
     }
 
-    // 3. ADMIN VIEW (Checker): Actionable Buttons
-    // Handlers
+    // 3. ACTION MODE (Admin Only)
     const handleApprove = () => mutate({ id: contractId, action: 'APPROVE' });
     const handleReject = () => mutate({ id: contractId, action: 'REJECT', reason: rejectReason });
 
@@ -69,7 +80,7 @@ export const AdminActionBar = ({ contractId, status }) => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {/* REJECT FLOW */}
+                    {/* REJECT BUTTON */}
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive bg-background">
@@ -85,7 +96,7 @@ export const AdminActionBar = ({ contractId, status }) => {
                             </AlertDialogHeader>
                             <div className="py-2">
                                 <Textarea
-                                    placeholder="Reason for rejection (Required for Audit Log)..."
+                                    placeholder="Reason for rejection (Required)..."
                                     value={rejectReason}
                                     onChange={(e) => setRejectReason(e.target.value)}
                                     className="bg-background"
@@ -104,7 +115,7 @@ export const AdminActionBar = ({ contractId, status }) => {
                         </AlertDialogContent>
                     </AlertDialog>
 
-                    {/* APPROVE FLOW */}
+                    {/* APPROVE BUTTON */}
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:text-white">
@@ -115,7 +126,7 @@ export const AdminActionBar = ({ contractId, status }) => {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Authorize Disbursement?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    By approving, you confirm that all KYC and risk checks have been passed. This will generate the payment schedule.
+                                    By approving, you confirm that all KYC checks have been passed.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

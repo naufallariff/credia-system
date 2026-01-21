@@ -5,8 +5,7 @@ import { Loader2 } from 'lucide-react';
 import { ProtectedRoute } from '@/shared/lib/protected-route';
 import { DashboardLayout } from '@/widgets/layout/dashboard-layout';
 
-// --- LAZY IMPORTS (Optimasi Performa) ---
-// Menggunakan teknik Named Export: .then(module => ({ default: module.ComponentName }))
+// --- LAZY IMPORTS ---
 const LoginPage = lazy(() => import('@/pages/auth/login-page').then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import('@/pages/auth/register-page').then(m => ({ default: m.RegisterPage })));
 
@@ -31,6 +30,7 @@ const PageLoader = () => (
         <p className="text-sm font-medium">Loading Application...</p>
     </div>
 );
+
 export const AppRouter = () => {
     return (
         <BrowserRouter>
@@ -40,55 +40,56 @@ export const AppRouter = () => {
                     <Route path="/auth/login" element={<LoginPage />} />
                     <Route path="/auth/register" element={<RegisterPage />} />
 
-                    {/* Protected Layout Routes */}
-                    <Route element={
-                        <ProtectedRoute allowedRoles={['ADMIN', 'STAFF', 'SUPERADMIN', 'CLIENT']}>
-                            <DashboardLayout />
-                        </ProtectedRoute>
-                    }>
-                        {/* Default Redirect */}
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    {/* Protected Routes Wrapper */}
+                    <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF', 'SUPERADMIN', 'CLIENT']} />}>
+                        
+                        {/* KUNCI PERBAIKAN DISINI: */}
+                        {/* Semua halaman di bawah ini akan dibungkus oleh DashboardLayout */}
+                        <Route element={<DashboardLayout />}>
+                             {/* Default Redirect */}
+                            <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-                        {/* Shared Dashboard */}
-                        <Route path="/dashboard" element={<DashboardPage />} />
+                            {/* Shared Dashboard */}
+                            <Route path="/dashboard" element={<DashboardPage />} />
 
-                        {/* Contract Module */}
-                        <Route path="/contracts" element={<ContractListPage />} />
-                        <Route path="/contracts/new" element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'STAFF', 'SUPERADMIN']}>
-                                <CreateContractPage />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/contracts/:id" element={<ContractDetailPage />} />
+                            {/* Contract Module */}
+                            <Route path="/contracts" element={<ContractListPage />} />
+                            <Route path="/contracts/new" element={
+                                <ProtectedRoute allowedRoles={['ADMIN', 'STAFF', 'SUPERADMIN']}>
+                                    <CreateContractPage />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/contracts/:id" element={<ContractDetailPage />} />
 
-                        {/* --- ADMIN ONLY ROUTES --- */}
-                        <Route path="/approvals" element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
-                                <ApprovalPage />
-                            </ProtectedRoute>
-                        } />
+                            {/* Admin Modules */}
+                            <Route path="/approvals" element={
+                                <ProtectedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
+                                    <ApprovalPage />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/users" element={
+                                <ProtectedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
+                                    <UserListPage />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/config" element={
+                                <ProtectedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
+                                    <SettingsPage />
+                                </ProtectedRoute>
+                            } />
 
-                        <Route path="/users" element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
-                                <UserListPage />
-                            </ProtectedRoute>
-                        } />
+                            {/* Client Module */}
+                            <Route path="/client/dashboard" element={
+                                <ProtectedRoute allowedRoles={['CLIENT']}>
+                                    <ClientDashboardPage />
+                                </ProtectedRoute>
+                            } />
+                        </Route>
+                        {/* AKHIR DARI DASHBOARD LAYOUT WRAPPER */}
 
-                        <Route path="/config" element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
-                                <SettingsPage />
-                            </ProtectedRoute>
-                        } />
-
-                        {/* --- CLIENT ONLY ROUTES --- */}
-                        <Route path="/client/dashboard" element={
-                            <ProtectedRoute allowedRoles={['CLIENT']}>
-                                <ClientDashboardPage />
-                            </ProtectedRoute>
-                        } />
                     </Route>
 
-                    {/* Catch All - Redirect to Login */}
+                    {/* Catch All */}
                     <Route path="*" element={<Navigate to="/auth/login" replace />} />
                 </Routes>
             </Suspense>

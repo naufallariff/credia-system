@@ -4,8 +4,7 @@ import {
     CheckSquare,
     Users,
     Settings,
-    CreditCard,
-    PieChart
+    CreditCard
 } from 'lucide-react';
 
 /**
@@ -56,7 +55,7 @@ export const NAV_ITEMS = [
     },
 
     // 6. System Core (Superadmin Only)
-    // CRITICAL: Only Superadmin can change business rules (Interest rates, etc).
+    // CRITICAL: Only Superadmin can change business rules.
     {
         title: 'System Config',
         path: '/config',

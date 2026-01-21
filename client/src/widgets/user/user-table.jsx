@@ -10,62 +10,90 @@ import {
 } from "@/shared/ui/table";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
 
-// Update warna badge agar ramah dark mode
+// Helper for Initials
+const getInitials = (name) => name?.substring(0, 2).toUpperCase() || 'U';
+
+// Badge Styles with Opacity (Modern Look)
 const getRoleBadgeStyle = (role) => {
     switch (role) {
-        case 'SUPERADMIN': return 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/20';
-        case 'ADMIN': return 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/20';
-        case 'STAFF': return 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20';
-        default: return 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/20';
+        case 'SUPERADMIN': return 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-900';
+        case 'ADMIN': return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900';
+        case 'STAFF': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900';
+        default: return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800';
     }
 };
 
 export const UserTable = ({ users, isLoading }) => {
-    if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading users...</div>;
+    if (isLoading) return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading user directory...</div>;
 
     return (
-        <div className="rounded-md border border-border bg-card overflow-hidden">
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
             <Table>
-                <TableHeader className="bg-muted/50">
+                <TableHeader className="bg-muted/40">
                     <TableRow className="hover:bg-transparent border-border">
-                        <TableHead className="text-muted-foreground">User Information</TableHead>
-                        <TableHead className="text-muted-foreground">Role</TableHead>
-                        <TableHead className="text-muted-foreground">Status</TableHead>
-                        <TableHead className="text-muted-foreground">Joined Date</TableHead>
+                        <TableHead className="w-[300px]">User Profile</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Joined Date</TableHead>
                         <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {users.map((user) => (
-                        <TableRow key={user._id} className="hover:bg-muted/50 border-border transition-colors">
+                        <TableRow key={user._id} className="hover:bg-muted/30 border-border transition-colors">
+                            {/* 1. User Profile with Avatar */}
                             <TableCell>
-                                <div className="flex flex-col">
-                                    <span className="font-medium text-foreground">{user.name}</span>
-                                    <span className="text-xs text-muted-foreground">@{user.username} • {user.email}</span>
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-9 w-9 border border-border">
+                                        <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} />
+                                        <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                                            {/* Pastikan helper getInitials ada */}
+                                            {user.name?.substring(0, 2).toUpperCase() || 'U'}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex flex-col">
+                                        <span className="font-medium text-foreground text-sm leading-none mb-1">{user.name}</span>
+                                        <span className="text-xs text-muted-foreground">{user.email}</span>
+                                    </div>
                                 </div>
                             </TableCell>
+
+                            {/* 2. Role Badge */}
                             <TableCell>
-                                <Badge className={`${getRoleBadgeStyle(user.role)} border px-2 shadow-none hover:bg-transparent`}>
+                                <Badge className={`${getRoleBadgeStyle(user.role)} border shadow-none px-2.5 rounded-md`}>
                                     {user.role}
                                 </Badge>
                             </TableCell>
+
+                            {/* 3. Status Indicator */}
                             <TableCell>
                                 <div className="flex items-center gap-2">
-                                    <span className={`h-2 w-2 rounded-full ${user.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-destructive'}`} />
-                                    <span className="text-sm text-muted-foreground capitalize">{user.status.toLowerCase()}</span>
+                                    <span className={`relative flex h-2.5 w-2.5`}>
+                                        {user.status === 'ACTIVE' && (
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        )}
+                                        <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${user.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-destructive'}`}></span>
+                                    </span>
+                                    <span className="text-sm font-medium text-foreground capitalize">{user.status.toLowerCase()}</span>
                                 </div>
                             </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
+
+                            {/* 4. Date */}
+                            <TableCell className="text-right text-muted-foreground text-sm font-mono">
                                 {user.created_at ? format(new Date(user.created_at), 'dd MMM yyyy') : '-'}
                             </TableCell>
+
+                            {/* 5. Actions */}
                             <TableCell>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -74,8 +102,12 @@ export const UserTable = ({ users, isLoading }) => {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                        <DropdownMenuItem>Edit Details</DropdownMenuItem>
+                                        <DropdownMenuLabel>User Actions</DropdownMenuLabel>
+                                        <DropdownMenuItem>Edit Profile</DropdownMenuItem>
+                                        <DropdownMenuItem>Reset Password</DropdownMenuItem>
+
+                                        <DropdownMenuSeparator />
+
                                         <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">Suspend Account</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>

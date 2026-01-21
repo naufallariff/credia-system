@@ -8,7 +8,7 @@ export const RecentActivity = ({ activities = [] }) => {
     const displayData = activities.length > 0 ? activities : [];
 
     return (
-        <Card className="h-[400px] flex flex-col bg-card border-border shadow-sm">
+        <Card className="h-[450px] flex flex-col bg-card border-border shadow-sm">
             <CardHeader className="pb-4 border-b border-border bg-muted/20">
                 <CardTitle className="flex items-center gap-2 text-base font-bold text-foreground">
                     <Activity className="h-4 w-4 text-primary" />

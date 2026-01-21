@@ -7,19 +7,19 @@ export const useDashboardStats = (userRole) => {
         queryFn: async () => {
             const isAdmin = ['ADMIN', 'SUPERADMIN'].includes(userRole);
 
-            // Parallel Execution
+            // Parallel Execution for Performance
             const [contractsRes, ticketsRes, usersRes] = await Promise.allSettled([
                 api.get('/contracts'),
                 api.get('/tickets?status=PENDING'),
                 isAdmin ? api.get('/users') : Promise.resolve({ data: { data: [] } })
             ]);
 
-            // Safe Data Extraction
+            // Safe Data Extraction (Handling fulfilled state)
             const contracts = contractsRes.status === 'fulfilled' ? (contractsRes.value.data?.data?.contracts || []) : [];
             const tickets = ticketsRes.status === 'fulfilled' ? (ticketsRes.value.data?.data || []) : [];
             const users = usersRes.status === 'fulfilled' ? (usersRes.value.data?.data || []) : [];
 
-            // Aggregation Logic
+            // Aggregation Logic (Client-side calc)
             const activeContracts = contracts.filter(c => c.status === 'ACTIVE');
             const totalPortfolio = activeContracts.reduce((sum, c) => sum + (c.principal_amount || 0), 0);
 

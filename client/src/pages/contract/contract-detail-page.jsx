@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, FileText } from 'lucide-react';
 
 import { useContractDetail } from '@/features/contract/use-contract-detail';
@@ -11,15 +11,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { AdminActionBar } from '@/widgets/contract/admin-action-bar';
 import { AmortizationTable } from '@/widgets/contract/amortization-table';
 import { PrintContractButton } from '@/widgets/contract/print-contract-button';
-import { ContractInfo } from '@/widgets/contract/contract-info'; // Pastikan ini diimport
+import { ContractInfo } from '@/widgets/contract/contract-info';
 
 export const ContractDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Fetch Data
     const { data: contract, isLoading, error } = useContractDetail(id);
 
+    // --- SMART BACK BUTTON LOGIC ---
+    const previousPath = location.state?.from;
+    const isFromApproval = previousPath === '/approvals';
+
+    const handleBack = () => {
+        if (isFromApproval) {
+            navigate('/approvals');
+        } else {
+            navigate('/contracts');
+        }
+    };
+
+    // --- Loading & Error States ---
     if (isLoading) return <DetailSkeleton />;
-    if (error) return <div className="p-8 text-center text-destructive">Failed to load contract details.</div>;
+    if (error || !contract) return (
+        <div className="p-8 text-center text-destructive bg-destructive/10 rounded-lg m-4">
+            Failed to load contract details. ID might be invalid.
+        </div>
+    );
 
     return (
         <div className="space-y-6 max-w-6xl mx-auto pb-10">
@@ -27,8 +47,14 @@ export const ContractDetailPage = () => {
             {/* --- HEADER SECTION --- */}
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div className="space-y-1">
-                    <Button variant="ghost" className="pl-0 hover:pl-0 hover:bg-transparent text-muted-foreground hover:text-foreground" onClick={() => navigate(-1)}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Directory
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleBack}
+                        className="gap-2 text-muted-foreground hover:text-foreground pl-0"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        {isFromApproval ? 'Back to Approval Queue' : 'Back to Directory'}
                     </Button>
 
                     <div className="flex items-center gap-3">
@@ -46,15 +72,14 @@ export const ContractDetailPage = () => {
                         </Badge>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1"><User className="h-3 w-3" /> {contract.client?.name}</span>
+                        <span className="flex items-center gap-1"><User className="h-3 w-3" /> {contract.client?.name || 'Unknown Client'}</span>
                         <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {contract.duration_month} Months</span>
                     </div>
                 </div>
 
-                {/* --- ACTION BUTTONS (TOP RIGHT) --- */}
+                {/* --- ACTION BUTTONS --- */}
                 <div className="flex items-center gap-2">
                     <PrintContractButton contract={contract} />
-
                     {contract.status === 'PENDING_ACTIVATION' && (
                         <Button variant="secondary">Edit Details</Button>
                     )}
@@ -67,24 +92,9 @@ export const ContractDetailPage = () => {
             {/* --- MAIN TABS --- */}
             <Tabs defaultValue="overview" className="w-full">
                 <TabsList className="w-full justify-start border-b border-border rounded-none h-auto p-0 bg-transparent gap-6">
-                    <TabsTrigger
-                        value="overview"
-                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none py-3 px-1 text-muted-foreground"
-                    >
-                        Overview
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="schedule"
-                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none py-3 px-1 text-muted-foreground"
-                    >
-                        Amortization Schedule
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="documents"
-                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none py-3 px-1 text-muted-foreground"
-                    >
-                        Documents
-                    </TabsTrigger>
+                    <TabItem value="overview" label="Overview" />
+                    <TabItem value="schedule" label="Amortization Schedule" />
+                    <TabItem value="documents" label="Documents" />
                 </TabsList>
 
                 <div className="mt-6">
@@ -111,6 +121,21 @@ export const ContractDetailPage = () => {
         </div>
     );
 };
+
+// Component kecil untuk Tab agar kodingan lebih rapi
+const TabItem = ({ value, label }) => (
+    <TabsTrigger
+        value={value}
+        className="
+            rounded-none border-b-2 border-transparent bg-transparent py-3 px-1 text-muted-foreground 
+            data-[state=active]:border-primary data-[state=active]:text-primary 
+            data-[state=active]:shadow-none data-[state=active]:bg-transparent 
+            hover:text-foreground transition-all
+        "
+    >
+        {label}
+    </TabsTrigger>
+);
 
 const DetailSkeleton = () => (
     <div className="space-y-6 max-w-5xl mx-auto pt-10">

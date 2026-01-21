@@ -1,16 +1,16 @@
 import axios from 'axios';
 
-// Konfigurasi Base URL
-// Menggunakan proxy Vite '/api' untuk menghindari masalah CORS saat development
+// Configure Base URL
+// Using Vite proxy '/api' to avoid CORS issues during development
 const api = axios.create({
     baseURL: '/api',
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 10000, // 10 detik timeout
+    timeout: 10000, // 10s timeout
 });
 
-// Request Interceptor: Menyisipkan Token JWT otomatis
+// Request Interceptor: Auto-inject JWT Token
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
@@ -22,13 +22,13 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Menangani Global Error (misal: Token Expired)
+// Response Interceptor: Handle Global Errors (e.g., Token Expired)
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        // Jika 401 Unauthorized (Token invalid/expired), logout user
+        // If 401 Unauthorized (Invalid/Expired Token), log user out
         if (error.response && error.response.status === 401) {
-            // Cek apakah bukan di halaman login agar tidak loop redirect
+            // Prevent redirect loop if already on login page
             if (error.config.url.includes('/auth/login')) {
                 return Promise.reject(error);
             }

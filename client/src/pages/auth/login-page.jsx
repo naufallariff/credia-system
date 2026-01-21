@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'; // 1. Import Link
 import { LoginForm } from '@/features/auth/login-form';
 import { CreditCard, ShieldCheck, TrendingUp } from 'lucide-react';
 
@@ -25,6 +26,19 @@ export const LoginPage = () => {
 
                     {/* The Actual Form */}
                     <LoginForm />
+
+                    {/* 2. Registration Link Section (NEW) */}
+                    <div className="mt-6 text-center text-sm text-muted-foreground">
+                        <p>
+                            Don&apos;t have an account?{' '}
+                            <Link
+                                to="/auth/register"
+                                className="font-semibold text-primary hover:underline hover:text-primary/80 transition-colors"
+                            >
+                                Create an account
+                            </Link>
+                        </p>
+                    </div>
 
                     <div className="mt-8 text-center text-xs text-muted-foreground">
                         <p>&copy; {new Date().getFullYear()} Credia Financial Systems. All rights reserved.</p>
