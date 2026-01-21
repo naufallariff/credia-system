@@ -13,11 +13,11 @@ export const ActiveLoanCard = ({ contract, summary }) => {
 
     if (!contract) {
         return (
-            <Card className="bg-slate-50 border-dashed border-2">
+            <Card className="bg-muted/30 border-dashed border-2 border-border shadow-none">
                 <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-                    <CreditCard className="h-10 w-10 text-slate-300 mb-3" />
-                    <h3 className="font-semibold text-slate-900">No Active Loan</h3>
-                    <p className="text-sm text-slate-500 mb-4">You don't have any active financing at the moment.</p>
+                    <CreditCard className="h-10 w-10 text-muted-foreground mb-3 opacity-50" />
+                    <h3 className="font-semibold text-foreground">No Active Loan</h3>
+                    <p className="text-sm text-muted-foreground mb-4">You don't have any active financing at the moment.</p>
                     <Button onClick={() => navigate('/contracts/new')}>Apply for Loan</Button>
                 </CardContent>
             </Card>
@@ -30,18 +30,18 @@ export const ActiveLoanCard = ({ contract, summary }) => {
     const progress = Math.round((paidAmount / totalAmount) * 100);
 
     return (
-        <Card className="border-l-4 border-l-primary shadow-md overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                <CreditCard className="h-32 w-32" />
+        <Card className="border-l-4 border-l-primary shadow-md overflow-hidden relative bg-card border-t border-r border-b border-border">
+            <div className="absolute top-0 right-0 p-4 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
+                <CreditCard className="h-32 w-32 text-primary" />
             </div>
 
             <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
                     <div>
-                        <Badge variant="outline" className="mb-2 bg-primary/5 text-primary border-primary/20">
+                        <Badge variant="outline" className="mb-2 bg-primary/10 text-primary border-primary/20">
                             Active Contract
                         </Badge>
-                        <CardTitle className="text-xl font-bold text-slate-900">
+                        <CardTitle className="text-xl font-bold text-foreground">
                             {contract.contract_no}
                         </CardTitle>
                         <CardDescription>
@@ -49,8 +49,8 @@ export const ActiveLoanCard = ({ contract, summary }) => {
                         </CardDescription>
                     </div>
                     <div className="text-right">
-                        <p className="text-xs text-slate-500 uppercase tracking-wide">Monthly Installment</p>
-                        <p className="text-xl font-bold text-slate-900">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Monthly Installment</p>
+                        <p className="text-xl font-bold text-foreground">
                             {formatRupiah(contract.monthly_installment)}
                         </p>
                     </div>
@@ -61,11 +61,11 @@ export const ActiveLoanCard = ({ contract, summary }) => {
                 {/* Progress Bar */}
                 <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                        <span className="text-slate-600 font-medium">Repayment Progress</span>
-                        <span className="text-slate-900 font-bold">{progress}% Paid</span>
+                        <span className="text-muted-foreground font-medium">Repayment Progress</span>
+                        <span className="text-foreground font-bold">{progress}% Paid</span>
                     </div>
-                    <Progress value={progress} className="h-2" />
-                    <div className="flex justify-between text-xs text-slate-400">
+                    <Progress value={progress} className="h-2 bg-muted" />
+                    <div className="flex justify-between text-xs text-muted-foreground">
                         <span>{formatRupiah(paidAmount)}</span>
                         <span>Total: {formatRupiah(totalAmount)}</span>
                     </div>
@@ -73,22 +73,22 @@ export const ActiveLoanCard = ({ contract, summary }) => {
 
                 {/* Key Metrics */}
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                        <div className="flex items-center gap-2 mb-1 text-slate-500">
+                    <div className="p-3 bg-muted/50 rounded-lg border border-border">
+                        <div className="flex items-center gap-2 mb-1 text-muted-foreground">
                             <TrendingDown className="h-4 w-4" />
                             <span className="text-xs font-semibold uppercase">Remaining Debt</span>
                         </div>
-                        <p className="text-lg font-bold text-slate-900">
+                        <p className="text-lg font-bold text-foreground">
                             {formatRupiah(summary.remainingDebt)}
                         </p>
                     </div>
 
-                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-                        <div className="flex items-center gap-2 mb-1 text-blue-600">
+                    <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                        <div className="flex items-center gap-2 mb-1 text-blue-600 dark:text-blue-400">
                             <Calendar className="h-4 w-4" />
                             <span className="text-xs font-semibold uppercase">Next Due Date</span>
                         </div>
-                        <p className="text-lg font-bold text-blue-900">
+                        <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
                             {summary.nextDueDate
                                 ? format(new Date(summary.nextDueDate), 'dd MMM yyyy')
                                 : 'All Paid'}

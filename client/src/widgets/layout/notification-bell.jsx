@@ -16,7 +16,9 @@ import { Separator } from "@/shared/ui/separator";
 
 export const NotificationBell = () => {
     const [open, setOpen] = useState(false);
-    const { data: notifications = [], isLoading } = useNotifications();
+    const { data, isLoading } = useNotifications();
+    const notifications = Array.isArray(data) ? data : [];
+
     const { mutate: markRead } = useMarkAsRead();
     const { mutate: markAllRead } = useMarkAllRead();
 
@@ -74,8 +76,8 @@ export const NotificationBell = () => {
                                         key={item._id}
                                         onClick={() => handleItemClick(item)}
                                         className={`
-                      flex gap-3 p-4 text-left transition-colors cursor-pointer hover:bg-slate-50
-                      ${!item.is_read ? 'bg-blue-50/30' : 'bg-white'}
+                        flex gap-3 p-4 text-left transition-colors cursor-pointer hover:bg-slate-50
+                        ${!item.is_read ? 'bg-blue-50/30' : 'bg-white'}
                     `}
                                     >
                                         <div className={`mt-1 h-8 w-8 min-w-[2rem] rounded-full flex items-center justify-center ${style.bg}`}>

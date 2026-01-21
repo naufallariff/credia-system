@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Save, Calculator, ArrowRight } from 'lucide-react';
+import { Loader2, Save, Calculator, ArrowRight, Lock } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import api from '@/shared/api/axios';
@@ -16,7 +16,6 @@ import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/shared/ui/card';
 import { Separator } from '@/shared/ui/separator';
-import { Badge } from '@/shared/ui/badge';
 import {
     Select,
     SelectContent,
@@ -39,26 +38,33 @@ export const CreateContractForm = () => {
     const form = useForm({
         resolver: zodResolver(CreateContractSchema),
         defaultValues: {
-            otr_price: 0,
-            dp_amount: 0,
-            interest_rate: 12, // Will be overridden by config
+            otr_price: '',
+            dp_amount: '',
+            interest_rate: 0,
             duration_month: 12,
         },
-        mode: "onChange" // Validate on change for better UX
+        mode: "onChange"
     });
 
-    // 3. Apply Global Config Defaults
+    const otrPrice = form.watch('otr_price');
+
+    // 3. AUTO-LOGIC
     useEffect(() => {
         if (config) {
-            if (!form.getValues('interest_rate')) {
-                form.setValue('interest_rate', config.interest_rate_default || 12);
+            form.setValue('interest_rate', config.interest_rate_default || 12, { shouldValidate: true });
+            if (otrPrice && otrPrice > 0) {
+                const minDpPercent = config.min_dp_percent || 20;
+                const autoDp = Math.ceil(otrPrice * (minDpPercent / 100));
+                const currentDp = form.getValues('dp_amount');
+                if (!currentDp || currentDp < autoDp) {
+                    form.setValue('dp_amount', autoDp, { shouldValidate: true });
+                }
             }
         }
-    }, [config, form]);
+    }, [config, otrPrice, form]);
 
-    // 4. Real-time Calculation Engine (The "Brain")
+    // 4. Calculation
     const formValues = form.watch();
-
     const simulation = useMemo(() => {
         const otr = Number(formValues.otr_price) || 0;
         const dp = Number(formValues.dp_amount) || 0;
@@ -66,121 +72,102 @@ export const CreateContractForm = () => {
         const duration = Number(formValues.duration_month) || 12;
 
         const principal = Math.max(0, otr - dp);
-
-        // Flat Rate Calculation Logic
         const totalInterest = Math.ceil(principal * (rate / 100) * (duration / 12));
         const totalLoan = principal + totalInterest;
         const monthlyInstallment = duration > 0 ? Math.ceil(totalLoan / duration) : 0;
 
-        return {
-            principal,
-            totalInterest,
-            totalLoan,
-            monthlyInstallment
-        };
-    }, [formValues.otr_price, formValues.dp_amount, formValues.interest_rate, formValues.duration_month]);
+        return { principal, totalInterest, totalLoan, monthlyInstallment };
+    }, [formValues]);
 
-    // 5. API Mutation
+    // 5. Mutation
     const mutation = useMutation({
         mutationFn: (data) => api.post('/contracts', data),
         onSuccess: () => {
             queryClient.invalidateQueries(['contracts']);
-            toast({ title: "Application Submitted", description: "Contract has been created and is pending approval." });
+            toast({ title: "Success", description: "Contract submitted for approval." });
             navigate('/contracts');
         },
         onError: (error) => {
             toast({
                 variant: "destructive",
                 title: "Submission Failed",
-                description: error.response?.data?.message || "Failed to create contract"
+                description: error.response?.data?.message || "Verify your inputs."
             });
         }
     });
 
     const onSubmit = (data) => {
-        // Inject calculated principal for backend validation safety
         mutation.mutate({ ...data, principal_amount: simulation.principal });
     };
+
+    const minDpPercent = config?.min_dp_percent || 20;
 
     return (
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {/* --- LEFT COLUMN: INPUTS (2/3 Width) --- */}
+                {/* --- LEFT COLUMN: INPUTS --- */}
                 <div className="lg:col-span-2 space-y-6">
-
-                    {/* Section 1: Borrower Selection */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Borrower Information</CardTitle>
-                            <CardDescription>Select the client applying for financing.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-2">
                                 <Label>Select Client</Label>
                                 <Select onValueChange={(val) => form.setValue('client_id', val)}>
-                                    <SelectTrigger className="h-11">
-                                        <SelectValue placeholder={loadingClients ? "Loading clients..." : "Select a client..."} />
+                                    <SelectTrigger className="h-11 bg-background">
+                                        <SelectValue placeholder={loadingClients ? "Loading..." : "Select a client..."} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {clients?.map(client => (
                                             <SelectItem key={client._id} value={client._id}>
-                                                <div className="flex flex-col text-left">
-                                                    <span className="font-medium">{client.name}</span>
-                                                    <span className="text-xs text-slate-500">{client.email}</span>
-                                                </div>
+                                                {client.name} - {client.email}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                                 {form.formState.errors.client_id && (
-                                    <p className="text-xs text-red-500 font-medium">{form.formState.errors.client_id.message}</p>
+                                    <p className="text-xs text-destructive">{form.formState.errors.client_id.message}</p>
                                 )}
                             </div>
                         </CardContent>
                     </Card>
 
-                    {/* Section 2: Loan Parameters */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Loan Parameters</CardTitle>
-                            <CardDescription>Define the asset value and financing terms.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                                {/* OTR Input with Helper */}
                                 <div className="space-y-2">
                                     <Label>OTR Price (Rp)</Label>
                                     <Input
                                         type="number"
-                                        placeholder="e.g. 25000000"
-                                        className="font-mono"
+                                        placeholder="e.g. 50000000"
                                         {...form.register('otr_price')}
                                     />
                                     {formValues.otr_price > 0 && (
-                                        <p className="text-xs text-slate-500 text-right">
+                                        <p className="text-xs text-muted-foreground text-right">
                                             {formatRupiah(formValues.otr_price)}
                                         </p>
                                     )}
                                 </div>
 
-                                {/* DP Input with Helper */}
                                 <div className="space-y-2">
                                     <Label>Down Payment (Rp)</Label>
                                     <Input
                                         type="number"
-                                        placeholder="Min 20%"
-                                        className="font-mono"
+                                        placeholder={`Min ${minDpPercent}% of OTR`}
                                         {...form.register('dp_amount')}
                                     />
                                     {formValues.dp_amount > 0 && (
-                                        <p className="text-xs text-slate-500 text-right">
+                                        <p className="text-xs text-muted-foreground text-right">
                                             {formatRupiah(formValues.dp_amount)}
                                         </p>
                                     )}
                                     {form.formState.errors.dp_amount && (
-                                        <p className="text-xs text-red-500 font-medium">{form.formState.errors.dp_amount.message}</p>
+                                        <p className="text-xs text-destructive">{form.formState.errors.dp_amount.message}</p>
                                     )}
                                 </div>
                             </div>
@@ -192,7 +179,7 @@ export const CreateContractForm = () => {
                                         onValueChange={(v) => form.setValue('duration_month', parseInt(v))}
                                         defaultValue="12"
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger className="bg-background">
                                             <SelectValue placeholder="Select duration" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -204,88 +191,66 @@ export const CreateContractForm = () => {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Interest Rate (% / Year)</Label>
-                                    <div className="relative">
-                                        <Input
-                                            type="number"
-                                            step="0.1"
-                                            className="pr-8"
-                                            {...form.register('interest_rate')}
-                                        />
-                                        <span className="absolute right-3 top-2.5 text-sm text-slate-400">%</span>
-                                    </div>
+                                    <Label className="flex items-center gap-2">
+                                        Interest Rate (%/Year)
+                                        <Lock className="h-3 w-3 text-muted-foreground" />
+                                    </Label>
+                                    {/* FIX: Ganti class hardcoded bg-slate-100 menjadi bg-muted */}
+                                    <Input
+                                        type="number"
+                                        readOnly
+                                        className="bg-muted text-muted-foreground cursor-not-allowed opacity-100 border-border"
+                                        {...form.register('interest_rate')}
+                                    />
+                                    <p className="text-[10px] text-muted-foreground">
+                                        Rate is locked by Global Configuration.
+                                    </p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* --- RIGHT COLUMN: SIMULATION SUMMARY (1/3 Width) --- */}
+                {/* --- RIGHT COLUMN: SIMULATION --- */}
                 <div className="lg:col-span-1">
-                    <Card className="sticky top-24 border-primary/20 shadow-lg shadow-primary/5">
-                        <CardHeader className="bg-slate-50/50 pb-4 border-b">
+                    <Card className="sticky top-24 border-primary/20 bg-primary/5">
+                        <CardHeader className="border-b border-primary/10 pb-4">
                             <div className="flex items-center gap-2 text-primary">
                                 <Calculator className="h-5 w-5" />
-                                <CardTitle className="text-lg">Loan Simulation</CardTitle>
+                                <CardTitle className="text-lg">Simulation</CardTitle>
                             </div>
                         </CardHeader>
                         <CardContent className="pt-6 space-y-4">
-
-                            {/* Principal Calculation */}
-                            <div className="space-y-1">
-                                <div className="flex justify-between text-sm text-slate-500">
-                                    <span>Asset Price (OTR)</span>
+                            <div className="space-y-1 text-sm">
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>Asset Price</span>
                                     <span>{formatRupiah(formValues.otr_price || 0)}</span>
                                 </div>
-                                <div className="flex justify-between text-sm text-slate-500">
-                                    <span>Down Payment (-)</span>
-                                    <span>{formatRupiah(formValues.dp_amount || 0)}</span>
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>Down Payment</span>
+                                    <span>- {formatRupiah(formValues.dp_amount || 0)}</span>
                                 </div>
-                                <Separator className="my-2" />
-                                <div className="flex justify-between font-medium text-slate-900">
-                                    <span>Principal Amount</span>
+                                <Separator className="my-2 bg-primary/20" />
+                                <div className="flex justify-between font-bold text-foreground">
+                                    <span>Principal</span>
                                     <span>{formatRupiah(simulation.principal)}</span>
                                 </div>
                             </div>
 
-                            {/* Interest Calculation */}
-                            <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-sm space-y-2">
-                                <div className="flex justify-between text-slate-600">
-                                    <span>Total Interest</span>
-                                    <span>{formatRupiah(simulation.totalInterest)}</span>
-                                </div>
-                                <div className="flex justify-between text-slate-600">
-                                    <span>Total Loan</span>
-                                    <span>{formatRupiah(simulation.totalLoan)}</span>
-                                </div>
-                            </div>
-
-                            {/* The Golden Number: Monthly Installment */}
                             <div className="pt-4 text-center">
-                                <p className="text-sm text-slate-500 mb-1">Estimated Monthly Payment</p>
+                                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Monthly Installment</p>
                                 <div className="text-3xl font-bold text-primary tracking-tight">
                                     {formatRupiah(simulation.monthlyInstallment)}
                                 </div>
-                                <Badge variant="outline" className="mt-2 font-normal text-slate-500">
-                                    for {formValues.duration_month || 12} months
-                                </Badge>
                             </div>
-
                         </CardContent>
                         <CardFooter className="pt-2 pb-6 px-6">
-                            <Button type="submit" className="w-full h-11 text-base shadow-md" disabled={mutation.isPending}>
-                                {mutation.isPending ? (
-                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                ) : (
-                                    <span className="flex items-center">
-                                        Submit Application <ArrowRight className="ml-2 h-4 w-4" />
-                                    </span>
-                                )}
+                            <Button type="submit" className="w-full" disabled={mutation.isPending}>
+                                {mutation.isPending ? <Loader2 className="animate-spin mr-2" /> : "Submit Application"}
                             </Button>
                         </CardFooter>
                     </Card>
                 </div>
-
             </div>
         </form>
     );

@@ -1,23 +1,31 @@
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './sidebar';
 import { Header } from './header';
 
 export const DashboardLayout = () => {
+    // State untuk Mobile Sidebar (Nanti bisa dikembangkan)
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-muted/40 transition-colors duration-300">
             {/* Sidebar (Fixed Left) */}
             <Sidebar />
 
             {/* Main Content Area */}
-            <div className="md:pl-64 flex flex-col min-h-screen">
+            <div className="md:pl-64 flex flex-col min-h-screen transition-all duration-300">
                 {/* Header (Fixed Top) */}
-                <Header />
+                <Header onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
 
                 {/* Dynamic Page Content */}
-                <main className="flex-1 pt-20 px-6 pb-8 animate-in fade-in duration-500">
-                    <Outlet />
+                <main className="flex-1 pt-20 px-4 md:px-8 pb-8 animate-in fade-in duration-500">
+                    <div className="max-w-7xl mx-auto space-y-6">
+                        <Outlet />
+                    </div>
                 </main>
             </div>
+
+            {/* Note: Mobile Sidebar Overlay logic can be added here later */}
         </div>
     );
 };

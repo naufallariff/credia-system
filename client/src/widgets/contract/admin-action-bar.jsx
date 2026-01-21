@@ -23,13 +23,11 @@ export const AdminActionBar = ({ contractId, status }) => {
     const { mutate, isPending } = useContractActions();
     const [rejectReason, setRejectReason] = useState('');
 
-    // 1. Guard Clauses: Only show for Admins on Pending contracts
     const isAdmin = ['ADMIN', 'SUPERADMIN'].includes(user?.role);
     const isPendingActivation = status === 'PENDING_ACTIVATION';
 
     if (!isAdmin || !isPendingActivation) return null;
 
-    // 2. Handlers
     const handleApprove = () => {
         mutate({ id: contractId, action: 'APPROVE' });
     };
@@ -39,25 +37,25 @@ export const AdminActionBar = ({ contractId, status }) => {
     };
 
     return (
-        <Card className="border-l-4 border-l-amber-500 bg-amber-50/50 shadow-md mb-6">
+        <Card className="border-l-4 border-l-amber-500 bg-amber-500/10 shadow-md mb-6 border-border">
             <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-100 rounded-full text-amber-600">
+                    <div className="p-2 bg-amber-500/20 rounded-full text-amber-600 dark:text-amber-400">
                         <AlertTriangle className="h-5 w-5" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-slate-800">Approval Required</h3>
-                        <p className="text-sm text-slate-600">
+                        <h3 className="font-bold text-foreground">Approval Required</h3>
+                        <p className="text-sm text-muted-foreground">
                             This contract is waiting for activation. Please review the details carefully.
                         </p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {/* Reject Button with Reason Dialog */}
+                    {/* Reject Button */}
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive" className="bg-white text-red-600 border border-red-200 hover:bg-red-50">
+                            <Button variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive bg-background">
                                 <XCircle className="mr-2 h-4 w-4" /> Reject
                             </Button>
                         </AlertDialogTrigger>
@@ -73,13 +71,14 @@ export const AdminActionBar = ({ contractId, status }) => {
                                     placeholder="Enter reason for rejection..."
                                     value={rejectReason}
                                     onChange={(e) => setRejectReason(e.target.value)}
+                                    className="bg-background"
                                 />
                             </div>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                     onClick={handleReject}
-                                    className="bg-red-600 hover:bg-red-700"
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                     disabled={!rejectReason}
                                 >
                                     Confirm Reject
@@ -91,7 +90,7 @@ export const AdminActionBar = ({ contractId, status }) => {
                     {/* Approve Button */}
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:text-white">
                                 <CheckCircle className="mr-2 h-4 w-4" /> Approve & Activate
                             </Button>
                         </AlertDialogTrigger>
@@ -104,7 +103,7 @@ export const AdminActionBar = ({ contractId, status }) => {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleApprove} className="bg-emerald-600 hover:bg-emerald-700">
+                                <AlertDialogAction onClick={handleApprove} className="bg-emerald-600 hover:bg-emerald-700 text-white">
                                     Yes, Activate
                                 </AlertDialogAction>
                             </AlertDialogFooter>

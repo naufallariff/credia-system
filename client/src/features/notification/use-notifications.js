@@ -6,13 +6,17 @@ export const useNotifications = () => {
     return useQuery({
         queryKey: ['notifications'],
         queryFn: async () => {
-            // Assuming GET /notifications returns list sorted by date desc
-            const response = await api.get('/notifications');
-            return response.data?.data || [];
+            try {
+                const response = await api.get('/notifications');
+                return response.data?.data || [];
+            } catch (error) {
+                console.warn("Failed to fetch notifications:", error);
+                return [];
+            }
         },
-        // Poll every 30 seconds to simulate real-time updates
         refetchInterval: 30000,
         staleTime: 10000,
+        initialData: [],
     });
 };
 

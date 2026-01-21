@@ -1,12 +1,9 @@
-import { useState } from 'react'; // Pastikan useState diimport
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, UserPlus } from 'lucide-react';
 
-// --- PERBAIKAN IMPORT (FIXED SECTION) ---
-// 1. Import Schema dari file schema
 import { CreateUserSchema } from '@/features/user/user-schema';
-// 2. Import Hook dari file use-users (BUKAN dari schema)
 import { useCreateUser } from '@/features/user/use-users';
 
 import {
@@ -30,8 +27,6 @@ import {
 
 export const CreateUserDialog = () => {
     const [open, setOpen] = useState(false);
-
-    // Gunakan hook yang sudah diimport dengan benar
     const { mutate, isPending } = useCreateUser();
 
     const form = useForm({
@@ -55,7 +50,7 @@ export const CreateUserDialog = () => {
                     <UserPlus className="mr-2 h-4 w-4" /> Add User
                 </Button>
             </DialogTrigger>
-            {/* ... Sisa kode ke bawah TETAP SAMA ... */}
+
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Create New Account</DialogTitle>
@@ -68,13 +63,13 @@ export const CreateUserDialog = () => {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>Full Name</Label>
-                            <Input {...form.register('name')} placeholder="John Doe" />
-                            {form.formState.errors.name && <p className="text-xs text-red-500">{form.formState.errors.name.message}</p>}
+                            <Input {...form.register('name')} placeholder="John Doe" className="bg-background" />
+                            {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
                         </div>
                         <div className="space-y-2">
                             <Label>Role</Label>
                             <Select onValueChange={(val) => form.setValue('role', val)} defaultValue="CLIENT">
-                                <SelectTrigger>
+                                <SelectTrigger className="bg-background">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -89,20 +84,20 @@ export const CreateUserDialog = () => {
                     {/* Credentials */}
                     <div className="space-y-2">
                         <Label>Email Address</Label>
-                        <Input type="email" {...form.register('email')} placeholder="john@example.com" />
-                        {form.formState.errors.email && <p className="text-xs text-red-500">{form.formState.errors.email.message}</p>}
+                        <Input type="email" {...form.register('email')} placeholder="john@example.com" className="bg-background" />
+                        {form.formState.errors.email && <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>Username</Label>
-                            <Input {...form.register('username')} placeholder="john.doe" />
-                            {form.formState.errors.username && <p className="text-xs text-red-500">{form.formState.errors.username.message}</p>}
+                            <Input {...form.register('username')} placeholder="john.doe" className="bg-background" />
+                            {form.formState.errors.username && <p className="text-xs text-destructive">{form.formState.errors.username.message}</p>}
                         </div>
                         <div className="space-y-2">
                             <Label>Password</Label>
-                            <Input type="password" {...form.register('password')} placeholder="••••••" />
-                            {form.formState.errors.password && <p className="text-xs text-red-500">{form.formState.errors.password.message}</p>}
+                            <Input type="password" {...form.register('password')} placeholder="••••••" className="bg-background" />
+                            {form.formState.errors.password && <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>}
                         </div>
                     </div>
 

@@ -20,11 +20,11 @@ import { PaymentModal } from '@/widgets/payment/payment-modal';
 const getStatusBadge = (status) => {
     switch (status) {
         case 'PAID':
-            return <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200">Paid</Badge>;
+            return <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/25">Paid</Badge>;
         case 'OVERDUE':
-            return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-red-200">Overdue</Badge>;
+            return <Badge className="bg-destructive/15 text-destructive dark:text-red-400 border-destructive/20 hover:bg-destructive/25">Overdue</Badge>;
         default:
-            return <Badge variant="outline" className="text-slate-500">Unpaid</Badge>;
+            return <Badge variant="outline" className="text-muted-foreground border-border">Unpaid</Badge>;
     }
 };
 
@@ -33,9 +33,9 @@ const getStatusIcon = (status) => {
         case 'PAID':
             return <CheckCircle className="h-4 w-4 text-emerald-500" />;
         case 'OVERDUE':
-            return <AlertCircle className="h-4 w-4 text-red-500" />;
+            return <AlertCircle className="h-4 w-4 text-destructive" />;
         default:
-            return <Clock className="h-4 w-4 text-slate-300" />;
+            return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
 };
 
@@ -46,47 +46,44 @@ export const AmortizationTable = ({ schedule, contractId, remainingLoan }) => {
     const canProcessPayment = ['ADMIN', 'STAFF', 'SUPERADMIN'].includes(user?.role);
 
     if (!schedule || schedule.length === 0) {
-        return <div className="p-4 text-center text-slate-500">No schedule generated.</div>;
+        return <div className="p-4 text-center text-muted-foreground">No schedule generated.</div>;
     }
 
     return (
         <>
-            <div className="rounded-md border bg-white overflow-hidden">
+            <div className="rounded-md border border-border bg-card overflow-hidden">
                 <Table>
-                    <TableHeader className="bg-slate-50">
-                        <TableRow>
-                            <TableHead className="w-[80px]">Month</TableHead>
-                            <TableHead>Due Date</TableHead>
-                            <TableHead>Installment</TableHead>
-                            <TableHead>Penalty</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Paid Date</TableHead>
+                    <TableHeader className="bg-muted/50">
+                        <TableRow className="hover:bg-transparent border-border">
+                            <TableHead className="w-[80px] text-muted-foreground">Month</TableHead>
+                            <TableHead className="text-muted-foreground">Due Date</TableHead>
+                            <TableHead className="text-muted-foreground">Installment</TableHead>
+                            <TableHead className="text-muted-foreground">Penalty</TableHead>
+                            <TableHead className="text-muted-foreground">Status</TableHead>
+                            <TableHead className="text-right text-muted-foreground">Paid Date</TableHead>
                             {canProcessPayment && <TableHead className="w-[100px]"></TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {schedule.map((item) => (
-                            <TableRow key={item.month} className={item.status === 'PAID' ? 'bg-slate-50/50' : ''}>
-                                <TableCell className="font-medium text-slate-700">#{item.month}</TableCell>
-                                <TableCell>{format(new Date(item.due_date), 'dd MMM yyyy')}</TableCell>
-                                <TableCell className="font-mono font-medium">{formatRupiah(item.amount)}</TableCell>
-                                <TableCell className="text-red-500 text-xs">
+                            <TableRow key={item.month} className={`${item.status === 'PAID' ? 'bg-muted/30' : ''} border-border hover:bg-muted/40`}>
+                                <TableCell className="font-medium text-foreground">#{item.month}</TableCell>
+                                <TableCell className="text-foreground">{format(new Date(item.due_date), 'dd MMM yyyy')}</TableCell>
+                                <TableCell className="font-mono font-medium text-foreground">{formatRupiah(item.amount)}</TableCell>
+                                <TableCell className="text-destructive text-xs font-medium">
                                     {item.penalty_paid > 0 ? formatRupiah(item.penalty_paid) : '-'}
                                 </TableCell>
 
                                 <TableCell>
                                     <div className="flex items-center gap-2">
-                                        <span className={`text-xs font-semibold px-2 py-1 rounded-full border ${item.status === 'PAID' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                                            item.status === 'OVERDUE' ? 'bg-red-100 text-red-700 border-red-200' :
-                                                'bg-slate-100 text-slate-600 border-slate-200'
-                                            }`}>
+                                        <div className="flex items-center gap-2">
                                             {getStatusIcon(item.status)}
                                             {getStatusBadge(item.status)}
-                                        </span>
+                                        </div>
                                     </div>
                                 </TableCell>
 
-                                <TableCell className="text-right text-slate-500 text-sm">
+                                <TableCell className="text-right text-muted-foreground text-sm">
                                     {item.paid_at ? format(new Date(item.paid_at), 'dd MMM yyyy HH:mm') : '-'}
                                 </TableCell>
 
@@ -97,7 +94,7 @@ export const AmortizationTable = ({ schedule, contractId, remainingLoan }) => {
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                className="h-7 text-xs border-primary text-primary hover:bg-primary/10"
+                                                className="h-7 text-xs border-primary text-primary hover:bg-primary/10 hover:text-primary"
                                                 onClick={() => setSelectedInstallment(item)}
                                             >
                                                 <Banknote className="mr-2 h-3 w-3" /> Pay

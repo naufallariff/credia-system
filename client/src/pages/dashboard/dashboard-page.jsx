@@ -14,7 +14,7 @@ export const DashboardPage = () => {
 
     if (isError) {
         return (
-            <div className="p-6 text-red-500 bg-red-50 rounded-lg border border-red-200">
+            <div className="p-6 text-destructive bg-destructive/10 rounded-lg border border-destructive/20">
                 Failed to load dashboard data. Please check your connection.
             </div>
         );
@@ -25,8 +25,8 @@ export const DashboardPage = () => {
             {/* 1. Page Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Overview</h1>
-                    <p className="text-slate-500">
+                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Overview</h1>
+                    <p className="text-muted-foreground">
                         Welcome back, <span className="font-semibold text-primary">{user?.name}</span>. Here is what's happening today.
                     </p>
                 </div>
@@ -45,12 +45,12 @@ export const DashboardPage = () => {
                 <StatCards stats={stats} isLoading={isLoading} userRole={user?.role} />
             </section>
 
-            {/* 3. Secondary Content Area (Placeholder for Next Step) */}
+            {/* 3. Secondary Content Area */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 h-64 flex items-center justify-center text-slate-400 border-dashed">
+                <div className="lg:col-span-2 bg-card rounded-xl border border-border border-dashed h-64 flex items-center justify-center text-muted-foreground">
                     Chart Visualization Widget (Coming Soon)
                 </div>
-                <div className="bg-white rounded-xl border border-slate-200 h-64 flex items-center justify-center text-slate-400 border-dashed">
+                <div className="bg-card rounded-xl border border-border border-dashed h-64 flex items-center justify-center text-muted-foreground">
                     Recent Activity Widget (Coming Soon)
                 </div>
             </div>

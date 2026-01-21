@@ -52,7 +52,7 @@ export const SettingsForm = () => {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-4xl">
 
             {/* 1. Loan Business Rules */}
-            <Card>
+            <Card className="bg-card">
                 <CardHeader>
                     <div className="flex items-center gap-2">
                         <Settings2 className="h-5 w-5 text-primary" />
@@ -64,20 +64,20 @@ export const SettingsForm = () => {
                     <div className="space-y-2">
                         <Label>Default Interest Rate (% / Year)</Label>
                         <Input type="number" step="0.1" {...form.register('interest_rate_default')} />
-                        <p className="text-xs text-slate-500">Base rate for new simulations.</p>
-                        {form.formState.errors.interest_rate_default && <p className="text-xs text-red-500">{form.formState.errors.interest_rate_default.message}</p>}
+                        <p className="text-xs text-muted-foreground">Base rate for new simulations.</p>
+                        {form.formState.errors.interest_rate_default && <p className="text-xs text-destructive">{form.formState.errors.interest_rate_default.message}</p>}
                     </div>
 
                     <div className="space-y-2">
                         <Label>Minimum Down Payment (%)</Label>
                         <Input type="number" step="1" {...form.register('min_dp_percent')} />
-                        <p className="text-xs text-slate-500">Minimum required percentage of OTR.</p>
+                        <p className="text-xs text-muted-foreground">Minimum required percentage of OTR.</p>
                     </div>
 
                     <div className="space-y-2">
                         <Label>Late Penalty Fee (% / Day)</Label>
                         <Input type="number" step="0.01" {...form.register('penalty_fee_percent')} />
-                        <p className="text-xs text-slate-500">Daily fine calculation for overdue payments.</p>
+                        <p className="text-xs text-muted-foreground">Daily fine calculation for overdue payments.</p>
                     </div>
 
                     <div className="space-y-2">
@@ -88,7 +88,7 @@ export const SettingsForm = () => {
             </Card>
 
             {/* 2. Company Information */}
-            <Card>
+            <Card className="bg-card">
                 <CardHeader>
                     <div className="flex items-center gap-2">
                         <Building2 className="h-5 w-5 text-primary" />
@@ -120,7 +120,7 @@ export const SettingsForm = () => {
 
 const SettingsSkeleton = () => (
     <div className="space-y-6 max-w-4xl">
-        <Skeleton className="h-[300px] w-full rounded-xl" />
-        <Skeleton className="h-[200px] w-full rounded-xl" />
+        <Skeleton className="h-[300px] w-full rounded-xl bg-muted" />
+        <Skeleton className="h-[200px] w-full rounded-xl bg-muted" />
     </div>
 );
