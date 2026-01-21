@@ -19,10 +19,19 @@ const connectDB = async () => {
  * @param {Array<Object>} models - Array of Mongoose models to clear.
  */
 const clearDatabase = async (models) => {
-    console.log('[Seeder] Cleaning collections...');
-    const promises = models.map(model => model.deleteMany({}));
-    await Promise.all(promises);
-    console.log('[Seeder] Database cleared.');
-};
+    console.log('[Seeder] Cleaning collections & indexes...');
 
+    const promises = models.map(async (model) => {
+        await model.deleteMany({});
+        // Drop existing indexes to ensure schema changes (like sparse: true) take effect
+        try {
+            await model.collection.dropIndexes();
+        } catch (e) {
+            // Ignore error if collection/indexes don't exist yet
+        }
+    });
+
+    await Promise.all(promises);
+    console.log('[Seeder] Database cleared & indexes dropped.');
+};
 module.exports = { connectDB, clearDatabase };

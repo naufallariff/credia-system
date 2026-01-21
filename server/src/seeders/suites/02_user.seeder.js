@@ -1,21 +1,19 @@
 const { faker } = require('@faker-js/faker');
-const bcrypt = require('bcryptjs');
+// Note: We do NOT import bcrypt here. We let the User Model handle security to ensure consistency.
 const User = require('../../models/User');
 
 /**
  * Seeder for User entities.
- * Creates internal staff (Superadmin, Admin, Staff) and specific client personas
- * for scenario-based testing, followed by mass filler data.
+ * Uses parallel User.create() execution to ensure Mongoose pre-save hooks (hashing) 
+ * are triggered correctly while maintaining high performance.
  */
 const seedUsers = async () => {
-    console.log('[02] Seeding Users (Realistic Personas)...');
+    console.log('[02] Seeding Users (Parallel Execution with Hooks)...');
 
-    // Pre-calculate hash to avoid repetitive CPU cycles
-    const salt = await bcrypt.genSalt(10);
-    const defaultPassword = await bcrypt.hash('password123', salt);
+    // Default password (Plain text, Model will hash it)
+    const defaultPassword = 'password123';
 
-    // --- 1. INTERNAL ORGANIZATION (Credia Finance Corp) ---
-    // Using strict corporate email format: firstname.lastname@company.com
+    // --- 1. INTERNAL ORGANIZATION ---
     const internalUsersData = [
         {
             name: 'Alexander Pierce',
@@ -30,7 +28,7 @@ const seedUsers = async () => {
             email: 'sarah.jenkins@credia.finance',
             username: 'sjenkins',
             role: 'ADMIN',
-            status: 'ACTIVE', // Main Finance Approver
+            status: 'ACTIVE',
             custom_id: 'EMP-002'
         },
         {
@@ -38,7 +36,7 @@ const seedUsers = async () => {
             email: 'robert.vance@credia.finance',
             username: 'rvance',
             role: 'ADMIN',
-            status: 'SUSPENDED', // Scenario: Suspended Admin
+            status: 'SUSPENDED',
             custom_id: 'EMP-003'
         },
         {
@@ -46,7 +44,7 @@ const seedUsers = async () => {
             email: 'michael.chang@credia.finance',
             username: 'mchang',
             role: 'ADMIN',
-            status: 'ACTIVE', // Auditor
+            status: 'ACTIVE',
             custom_id: 'EMP-004'
         },
         {
@@ -54,7 +52,7 @@ const seedUsers = async () => {
             email: 'emily.blunt@credia.finance',
             username: 'eblunt',
             role: 'STAFF',
-            status: 'ACTIVE', // Senior Sales
+            status: 'ACTIVE',
             custom_id: 'EMP-005'
         },
         {
@@ -62,91 +60,82 @@ const seedUsers = async () => {
             email: 'david.wallace@credia.finance',
             username: 'dwallace',
             role: 'STAFF',
-            status: 'ACTIVE', // Junior Sales
+            status: 'ACTIVE',
             custom_id: 'EMP-006'
         }
     ];
 
-    const createdInternals = await User.insertMany(internalUsersData.map(u => ({
-        ...u,
-        password: defaultPassword
-    })));
+    // Execute in parallel for performance
+    const createdInternals = await Promise.all(internalUsersData.map(u =>
+        User.create({ ...u, password: defaultPassword })
+    ));
 
-    // Reference for relationship mapping
     const mainStaff = createdInternals.find(u => u.email === 'emily.blunt@credia.finance');
 
-    // --- 2. CLIENT PERSONAS (8 distinct scenarios) ---
-    // Using common public email providers to simulate real customers
+    // --- 2. CLIENT PERSONAS ---
     const clientPersonasData = [
         {
             name: 'William Thacker',
             email: 'william.thacker88@gmail.com',
             username: 'wthacker',
-            status: 'ACTIVE',
-            scenario: 'CLOSED_LOAN' // Scenario 1
+            status: 'ACTIVE'
         },
         {
             name: 'Julia Roberts',
             email: 'julia.roberts@outlook.com',
             username: 'jroberts',
-            status: 'ACTIVE',
-            scenario: 'ACTIVE_SMOOTH' // Scenario 2
+            status: 'ACTIVE'
         },
         {
             name: 'Hugh Grant',
             email: 'hugh.grant@yahoo.com',
             username: 'hgrant',
-            status: 'ACTIVE',
-            scenario: 'ACTIVE_LATE' // Scenario 3
+            status: 'ACTIVE'
         },
         {
             name: 'Emma Watson',
             email: 'emma.watson@live.com',
             username: 'ewatson',
-            status: 'ACTIVE',
-            scenario: 'PENDING_APPROVAL' // Scenario 4
+            status: 'ACTIVE'
         },
         {
             name: 'Ryan Reynolds',
             email: 'ryan.reynolds@icloud.com',
             username: 'rreynolds',
-            status: 'ACTIVE',
-            scenario: 'REJECTED_APP' // Scenario 5
+            status: 'ACTIVE'
         },
         {
             name: 'Tom Holland',
             email: 'tom.holland@protonmail.com',
             username: 'tholland',
-            status: 'ACTIVE',
-            scenario: 'VOID_CONTRACT' // Scenario 6
+            status: 'ACTIVE'
         },
         {
             name: 'New Registered User',
             email: 'new.user.test@gmail.com',
             username: 'newuser001',
-            status: 'UNVERIFIED',
-            scenario: 'UNVERIFIED_ACCOUNT' // Scenario 7
+            status: 'UNVERIFIED'
         },
         {
             name: 'Suspicious Actor',
             email: 'fraud.alert.99@tempmail.com',
             username: 'badactor',
-            status: 'SUSPENDED',
-            scenario: 'SUSPENDED_ACCOUNT' // Scenario 8
+            status: 'SUSPENDED'
         }
     ];
 
-    const createdClients = await User.insertMany(clientPersonasData.map((u, i) => ({
-        ...u,
-        role: 'CLIENT',
-        custom_id: `CLI-2026-${100 + i}`,
-        password: defaultPassword,
-        created_by: mainStaff._id
-    })));
+    const createdClients = await Promise.all(clientPersonasData.map((u, i) =>
+        User.create({
+            ...u,
+            role: 'CLIENT',
+            custom_id: `CLI-2026-${100 + i}`,
+            password: defaultPassword,
+            created_by: mainStaff._id
+        })
+    ));
 
-    // --- 3. FILLER DATA (Stress Testing) ---
-    // Generate 25 additional clients for pagination testing
-    const fillerClients = faker.helpers.multiple(() => {
+    // --- 3. FILLER DATA ---
+    const fillerData = faker.helpers.multiple(() => {
         const firstName = faker.person.firstName();
         const lastName = faker.person.lastName();
         const username = faker.internet.username({ firstName, lastName }).toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -163,9 +152,8 @@ const seedUsers = async () => {
         };
     }, { count: 25 });
 
-    const createdFillers = await User.insertMany(fillerClients);
+    const createdFillers = await Promise.all(fillerData.map(u => User.create(u)));
 
-    // Return structured map for consumption by other seeders
     return {
         admins: createdInternals.filter(u => u.role === 'ADMIN' || u.role === 'SUPERADMIN'),
         staff: createdInternals.filter(u => u.role === 'STAFF'),

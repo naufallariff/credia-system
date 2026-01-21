@@ -1,48 +1,64 @@
 const ticketService = require('../services/ticketService');
 const ModificationTicket = require('../models/ModificationTicket');
-const { sendResponse } = require('../utils/response');
+const { successResponse, errorResponse } = require('../utils/response'); // Updated import
 
+/**
+ * Create Request Ticket
+ * Generates a new modification request for sensitive data changes.
+ */
 const createRequest = async (req, res, next) => {
     try {
         const { targetModel, targetId, requestType, proposedData, reason } = req.body;
+
         const ticket = await ticketService.createTicket(
             req.user.id, targetModel, targetId, requestType, proposedData, reason
         );
-        sendResponse(res, 201, true, 'Ticket created', ticket);
+
+        return successResponse(res, 'Ticket created successfully', ticket, 201);
     } catch (error) {
         next(error);
     }
 };
 
+/**
+ * Approve/Reject Ticket
+ * Processes the ticket and applies changes if approved.
+ */
 const approveRequest = async (req, res, next) => {
     try {
         const { ticketId } = req.params;
         const { action, note } = req.body;
 
-        // Security Check
+        // Security: Segregation of Duties (SoD)
+        // Staff are typically Makers, not Approvers.
         if (req.user.role === 'STAFF') {
-            return sendResponse(res, 403, false, 'Staff cannot approve tickets');
+            return errorResponse(res, 'Staff role is not authorized to approve tickets', 403);
         }
 
         const result = await ticketService.processTicket(
             ticketId, req.user.id, action, note
         );
 
-        sendResponse(res, 200, true, `Ticket ${action} successful`, result);
+        return successResponse(res, `Ticket ${action.toLowerCase()} successful`, result);
     } catch (error) {
         next(error);
     }
 };
 
+/**
+ * Get Tickets
+ * Retrieves ticket history based on user role scope.
+ */
 const getTickets = async (req, res, next) => {
     try {
         const filter = req.user.role === 'STAFF' ? { requester_id: req.user.id } : {};
+
         const tickets = await ModificationTicket.find(filter)
             .populate('requester_id', 'name custom_id')
             .sort({ createdAt: -1 })
             .lean();
 
-        sendResponse(res, 200, true, 'Tickets retrieved', tickets);
+        return successResponse(res, 'Tickets retrieved successfully', tickets);
     } catch (error) {
         next(error);
     }

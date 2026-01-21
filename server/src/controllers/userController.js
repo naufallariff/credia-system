@@ -1,13 +1,14 @@
 const User = require('../models/User');
 const { generateId } = require('../utils/idGenerator');
-const { sendResponse } = require('../utils/response');
+const { successResponse, errorResponse } = require('../utils/response'); // Updated import
 const { sendNotification } = require('../services/notificationService');
 const crypto = require('crypto');
 const emailService = require('../services/emailService');
 
 /**
  * Get All Users
- * Admin sees all; Staff sees Clients only.
+ * Retrieval logic based on Role-Based Access Control (RBAC).
+ * Admin retrieves all users; Staff retrieves Clients only.
  */
 const getUsers = async (req, res, next) => {
     try {
@@ -17,12 +18,17 @@ const getUsers = async (req, res, next) => {
         if (req.user.role === 'STAFF') {
             query = { role: 'CLIENT' };
         } else if (req.user.role === 'CLIENT') {
-            // Client can only see themselves (or nothing)
+            // Client is restricted to viewing their own profile
             query = { _id: req.user.id };
         }
 
-        const users = await User.find(query).select('-password').sort({ createdAt: -1 }).lean();
-        sendResponse(res, 200, true, 'Data retrieved', users);
+        // Use lean() for performance optimization on read-only operations
+        const users = await User.find(query)
+            .select('-password')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        return successResponse(res, 'User data retrieved successfully', users);
     } catch (error) {
         next(error);
     }
@@ -30,15 +36,16 @@ const getUsers = async (req, res, next) => {
 
 /**
  * Create User (Internal)
- * Used by Admin to manually add Staff or Clients
+ * Allows Admin to manually onboard Staff or Clients.
  */
 const createUser = async (req, res, next) => {
     try {
         const { name, email, username, password, role } = req.body;
 
-        // Security: Only Superadmin can create Admin/Superadmin
+        // Security: Privilege Escalation Prevention
+        // Only Superadmin is authorized to create Admin or Superadmin accounts
         if (['ADMIN', 'SUPERADMIN'].includes(role) && req.user.role !== 'SUPERADMIN') {
-            return sendResponse(res, 403, false, 'Insufficient permissions to create Admin users.');
+            return errorResponse(res, 'Insufficient permissions to create administrative accounts', 403);
         }
 
         const newUser = await User.create({
@@ -52,10 +59,10 @@ const createUser = async (req, res, next) => {
             created_by: req.user.id
         });
 
-        sendResponse(res, 201, true, 'User created successfully', {
+        return successResponse(res, 'User created successfully', {
             id: newUser.custom_id,
             username: newUser.username
-        });
+        }, 201);
     } catch (error) {
         next(error);
     }
@@ -63,7 +70,7 @@ const createUser = async (req, res, next) => {
 
 /**
  * Approve Lead
- * Converts a generic LEAD into a specific role (CLIENT/STAFF)
+ * Promotes a LEAD user to a specific role (CLIENT/STAFF) and generates credentials.
  */
 const approveUser = async (req, res, next) => {
     try {
@@ -71,30 +78,33 @@ const approveUser = async (req, res, next) => {
         const { action, targetRole } = req.body;
 
         const user = await User.findById(id);
-        if (!user) return sendResponse(res, 404, false, 'User not found');
+        if (!user) {
+            return errorResponse(res, 'User not found', 404);
+        }
 
         if (action === 'REJECT') {
             user.status = 'BANNED';
             await user.save();
-            return sendResponse(res, 200, true, 'User registration rejected.');
+            return successResponse(res, 'User registration rejected');
         }
 
-        // 1. Generate Secure Random Password (8 chars hex)
-        // Format: Credia-[Random] agar memenuhi syarat password complexity
+        // 1. Generate Secure Random Password
+        // Format: Credia-[8 Hex Chars] to ensure complexity requirements
         const rawPassword = `Credia-${crypto.randomBytes(4).toString('hex')}`;
 
         // 2. Update User Data
         user.status = 'ACTIVE';
         user.role = targetRole || 'CLIENT';
-        user.password = rawPassword; // Middleware 'pre save' di Model akan otomatis meng-hash ini
-        user.must_change_password = true; // FORCE PASSWORD CHANGE
-        
+        user.password = rawPassword; // Hashed automatically by Model pre-save hook
+        user.must_change_password = true; // Enforce security policy
+
         await user.save();
 
-        // 3. Send Email (Async, non-blocking)
-        emailService.sendWelcomeEmail(user.email, user.name, rawPassword);
+        // 3. Send Email (Async operation)
+        // We do not await this to prevent blocking the HTTP response, handled by the service queue
+        emailService.sendWelcomeEmail(user.email, user.name, rawPassword).catch(console.error);
 
-        // 4. Notification System (Internal)
+        // 4. Internal Notification
         await sendNotification(
             user._id,
             'SUCCESS',
@@ -102,7 +112,7 @@ const approveUser = async (req, res, next) => {
             'Your account is active. Check your email for login credentials.'
         );
 
-        sendResponse(res, 200, true, `User approved. Credentials sent to ${user.email}`);
+        return successResponse(res, `User approved. Credentials sent to ${user.email}`);
     } catch (error) {
         next(error);
     }

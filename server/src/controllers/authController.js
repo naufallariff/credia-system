@@ -1,7 +1,6 @@
 const User = require('../models/User');
 const { generateId } = require('../utils/idGenerator');
-// FIX: Import wrapper baru, bukan sendResponse
-const { successResponse, errorResponse } = require('../utils/response'); 
+const { successResponse, errorResponse } = require('../utils/response'); // UPDATE: Import Wrapper
 const jwt = require('jsonwebtoken');
 
 /**
@@ -46,7 +45,6 @@ const register = async (req, res, next) => {
             status: 'UNVERIFIED'
         });
 
-        // Use successResponse
         return successResponse(res, 'Registration successful. Please wait for Admin verification.', {
             id: user.custom_id,
             status: user.status
@@ -118,7 +116,6 @@ const login = async (req, res, next) => {
 
         const token = generateToken(user._id, user.role);
 
-        // Use successResponse
         return successResponse(res, 'Login successful', {
             token,
             user: {
