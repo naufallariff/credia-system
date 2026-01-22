@@ -2,11 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const colors = require('colors');
+require('colors'); // Load colors extensions
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
-const { errorResponse, successResponse } = require('./utils/response');
+
+// Utility & Middleware Imports
+const { successResponse, errorResponse } = require('./utils/response');
+const errorHandler = require('./middlewares/errorMiddleware');
 
 // Route Imports
 const authRoutes = require('./routes/authRoutes');
@@ -19,17 +22,28 @@ const configRoutes = require('./routes/configRoutes');
 const app = express();
 
 // --- 1. SECURITY & UTILITY MIDDLEWARE ---
-app.use(helmet()); // Secure HTTP Headers
-app.use(cors()); // Allow Cross-Origin
-app.use(express.json({ limit: '10kb' })); // Body limit prevents DoS
+
+// Set Security HTTP Headers
+app.use(helmet());
+
+// Enable Cross-Origin Resource Sharing
+// In production, strictly define the 'origin' options
+app.use(cors());
+
+// Body Parser with strict limit to prevent DoS
+app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Data Sanitization
-app.use(mongoSanitize()); // Prevent NoSQL Injection (remove $ signs)
-app.use(xss()); // Prevent XSS Attacks
-app.use(hpp()); // Prevent HTTP Parameter Pollution
+// Data Sanitization against NoSQL Query Injection
+app.use(mongoSanitize());
 
-// Logger (Development Only)
+// Data Sanitization against XSS
+app.use(xss());
+
+// Prevent HTTP Parameter Pollution
+app.use(hpp());
+
+// Development Logging
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan((tokens, req, res) => {
         const status = tokens.status(req, res);
@@ -44,7 +58,7 @@ if (process.env.NODE_ENV === 'development') {
     }));
 }
 
-// --- 2. ROUTES REGISTRATION ---
+// --- 2. ROUTE MOUNTING ---
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/contracts', contractRoutes);
@@ -52,28 +66,20 @@ app.use('/api/tickets', ticketRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/config', configRoutes);
 
-// Health Check
+// Health Check Endpoint
 app.get('/', (req, res) => {
-    return successResponse(res, 'Credia Enterprise Server V3.0 is running');
+    return successResponse(res, 'Credia Enterprise Server V3.0 is operational');
 });
 
-// Handle 404 (Not Found)
+// --- 3. ERROR HANDLING ---
+
+// 404 Not Found Handler
 app.all('*', (req, res, next) => {
     return errorResponse(res, `Route ${req.originalUrl} not found on this server`, 404);
 });
 
-// --- 3. GLOBAL ERROR HANDLER ---
-app.use((err, req, res, next) => {
-    // Determine status code (support custom throws like { statusCode: 400 })
-    const statusCode = err.statusCode || 500;
-    const message = err.message || 'Internal Server Error';
-
-    // Log critical server errors
-    if (statusCode >= 500) {
-        console.error(`[CRITICAL] ${err.stack}`.red);
-    }
-
-    return errorResponse(res, message, statusCode);
-});
+// Global Error Handler Middleware
+// Delegates detailed error logic to the dedicated middleware
+app.use(errorHandler);
 
 module.exports = app;
