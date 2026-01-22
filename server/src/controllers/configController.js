@@ -8,11 +8,11 @@ const { successResponse, errorResponse } = require('../utils/response'); // UPDA
 const getConfig = async (req, res, next) => {
     try {
         const config = await GlobalConfig.findOne({ key: 'LOAN_RULES' }).lean();
-
+        
         // Return default structure if config doesn't exist yet
-        const data = config || {
-            min_dp_percent: 20,
-            interest_tiers: []
+        const data = config || { 
+            min_dp_percent: 20, 
+            interest_tiers: [] 
         };
 
         return successResponse(res, 'System configuration retrieved', data);
