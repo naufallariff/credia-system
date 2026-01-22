@@ -1,63 +1,80 @@
-name: Frontend Pipeline (Test & Merge)
+name: Frontend Maestro Pipeline
 
 on:
   push:
-    branches: 
-      - 'feat/client-ui'     # Khusus branch client feature
-      - 'client-ui'          # Branch client-ui
+    branches:
+      - 'main'
+      - 'dev'
+      - 'feat/client-ui'
+      - 'client-ui'
     paths:
-      - 'client/**'          # HANYA jalan jika folder client berubah
+      - 'client/**'
+      - '.github/workflows/frontend-ci.yml'
 
-permissions:
-  contents: write
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  # STAGE 1: BUILD & TEST
   frontend-qa:
+    name: ⚛️ Frontend Build Check
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: client/package-lock.json
 
       - name: Install Dependencies
         working-directory: ./client
-        run: npm ci
+        run: npm ci --prefer-offline
 
-      - name: Run Unit Tests
+      - name: 🔍 Linting
         working-directory: ./client
-        run: npm test
+        run: npm run lint --if-present
 
-      - name: Build Check
+      - name: 🧪 Unit Tests
+        working-directory: ./client
+        run: npm test --if-present
+
+      - name: 🏗️ Production Build Check
         working-directory: ./client
         run: npm run build
 
-  auto-merge-frontend:
+  # STAGE 2: AUTO-MERGE (HANYA jalan jika branch adalah FEATURE)
+  promote-to-dev:
+    name: 🚀 Promote Feature to Dev
     needs: frontend-qa
-    if: success()
+    # LOGIC MAESTRO: Hanya merge jika sukses DAN source branch adalah fitur
+    if: success() && (startsWith(github.ref, 'refs/heads/feat/') || github.ref_name == 'client-ui')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Merge to Dev
+      - name: Merge Feature into Dev
         run: |
-          git config --global user.name "Credia CI Bot"
-          git config --global user.email "bot@credia.system"
+          git config user.name "Credia CI Bot"
+          git config user.email "ci@credia.system"
           
           git fetch origin dev
           git checkout dev
           git pull origin dev
           
-          echo "Merging changes from Frontend..."
-          git merge origin/${{ github.ref_name }} --no-ff -m "chore(frontend): auto-merge ${{ github.ref_name }} into dev [skip ci]"
+          echo "Merging ${{ github.ref_name }} into dev..."
+          git merge origin/${{ github.ref_name }} --no-ff -m "chore(frontend): merge ${{ github.ref_name }} to dev [skip ci]"
           
           git push origin dev
