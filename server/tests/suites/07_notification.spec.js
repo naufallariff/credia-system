@@ -22,14 +22,21 @@ const run = async () => {
     await runner.test('Setup: Staff triggers an alert (Create Ticket)', async () => {
         const res = await axios.post(`${API_URL}/tickets`, {
             targetModel: 'CONTRACT',
-            targetId: runner.getContext('ACTIVE_CONTRACT_ID'), // From Suite 04/05
-            requestType: 'EDIT_DATA',
+            targetId: runner.getContext('ACTIVE_CONTRACT_ID'), 
+            
+            // FIX: Gunakan Enum yang VALID (UPDATE)
+            requestType: 'UPDATE', 
+            
             reason: 'Testing Notification Delivery',
-            proposedData: {}
+            proposedData: { note: "Test change" }
         }, { headers: { Authorization: `Bearer ${staffToken}` } });
 
         runner.assertStatus(res, 201);
         ticketNo = res.data.data.ticket_no;
+        
+        // Simpan ID tiket agar test berikutnya aman
+        runner.setContext('TEST_TICKET_ID', res.data.data._id); 
+        
         runner.assertTruthy(ticketNo, 'Ticket Number generated');
     });
 
@@ -47,10 +54,13 @@ const run = async () => {
 
         const list = res.data.data.list;
         // Search for the specific notification
-        const targetNotif = list.find(n => n.message.includes(ticketNo));
+        const targetNotif = list.find(n => n.message && n.message.includes(ticketNo));
 
-        runner.assertTruthy(targetNotif, `Notification for Ticket ${ticketNo} found`);
-        runner.assertEquals(targetNotif.type, 'WARNING', 'Alert Type');
+        if (!targetNotif) {
+            throw new Error(`Notification for Ticket ${ticketNo} not found in Admin inbox`);
+        }
+
+        runner.assertEquals(targetNotif.type, 'WARNING', 'Alert Level');
         runner.assertEquals(targetNotif.is_read, false, 'Initial Read Status');
 
         notificationId = targetNotif._id;
@@ -87,13 +97,12 @@ const run = async () => {
         });
 
         const list = res.data.data.list;
-        const leakedNotif = list.find(n => n.message.includes(ticketNo));
+        const leakedNotif = list.find(n => n.message && n.message.includes(ticketNo));
 
         if (leakedNotif) {
             throw new Error('Critical: Client received internal Admin notification!');
         }
 
-        // Client list should be clean or only contain their own alerts
         runner.assertStatus(res, 200);
     });
 
