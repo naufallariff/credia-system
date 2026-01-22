@@ -6,7 +6,7 @@ const colors = require('colors');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
-const { errorResponse, successResponse } = require('./utils/response'); // FIX: Import Wrapper
+const { errorResponse, successResponse } = require('./utils/response');
 
 // Route Imports
 const authRoutes = require('./routes/authRoutes');

@@ -2,7 +2,7 @@ const Notification = require('../models/Notification');
 const User = require('../models/User');
 
 /**
- * Send a notification to a specific user
+ * Creates a single notification for a specific user.
  */
 const sendNotification = async (recipientId, type, title, message, relatedId = null, actionLink = null) => {
     return await Notification.create({
@@ -17,16 +17,16 @@ const sendNotification = async (recipientId, type, title, message, relatedId = n
 };
 
 /**
- * Broadcast notification to all users with a specific role
- * Optimized with Promise.all for performance
+ * Broadcasts a notification to all users holding a specific role.
+ * Optimized with bulk insert for performance scaling.
  */
 const notifyRole = async (role, type, title, message, relatedId = null, actionLink = null) => {
-    // 1. Find all target users (lean for performance)
+    // 1. Fetch Target Audience IDs
     const targets = await User.find({ role, status: 'ACTIVE' }).select('_id').lean();
-    
+
     if (targets.length === 0) return;
 
-    // 2. Prepare bulk payload
+    // 2. Construct Bulk Payload
     const notifications = targets.map(user => ({
         recipient_id: user._id,
         type,
@@ -37,12 +37,12 @@ const notifyRole = async (role, type, title, message, relatedId = null, actionLi
         is_read: false
     }));
 
-    // 3. Bulk Insert
+    // 3. Execute Bulk Write
     return await Notification.insertMany(notifications);
 };
 
 /**
- * Get unread notifications for a user
+ * Retrieves paginated notifications for the dashboard.
  */
 const getUserNotifications = async (userId, limit = 20) => {
     return await Notification.find({ recipient_id: userId })
@@ -52,7 +52,7 @@ const getUserNotifications = async (userId, limit = 20) => {
 };
 
 /**
- * Mark notification as read
+ * Marks a single notification as read.
  */
 const markAsRead = async (notificationId, userId) => {
     const notification = await Notification.findOneAndUpdate(
@@ -60,13 +60,13 @@ const markAsRead = async (notificationId, userId) => {
         { is_read: true },
         { new: true }
     );
-    
-    if (!notification) throw { statusCode: 404, message: 'Notification not found or access denied' };
+
+    if (!notification) throw { statusCode: 404, message: 'Notification not found' };
     return notification;
 };
 
 /**
- * Mark all as read for a user
+ * Batch update: Marks all user notifications as read.
  */
 const markAllAsRead = async (userId) => {
     await Notification.updateMany(
