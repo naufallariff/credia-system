@@ -2,6 +2,7 @@ const User = require('../models/User');
 const { generateId } = require('../utils/idGenerator');
 const { successResponse, errorResponse } = require('../utils/response');
 const { sendNotification } = require('../services/notificationService');
+const { logActivity } = require('../services/logService');
 const crypto = require('crypto');
 const emailService = require('../services/emailService');
 
@@ -59,7 +60,7 @@ const createUser = async (req, res, next) => {
             created_by: req.user.id
         });
 
-        // [NEW] LOGGING: USER MANAGEMENT
+        // LOGGING: USER MANAGEMENT
         logActivity(
             req,
             'CREATE',
@@ -94,6 +95,9 @@ const approveUser = async (req, res, next) => {
         if (action === 'REJECT') {
             user.status = 'BANNED';
             await user.save();
+
+            logActivity(req, 'REJECT', `Rejected user registration for ${user.email}`, 'User', user._id);
+
             return successResponse(res, 'User registration rejected');
         }
 
@@ -121,12 +125,12 @@ const approveUser = async (req, res, next) => {
             'Your account is active. Check your email for login credentials.'
         );
 
-        // [NEW] LOGGING: USER APPROVAL
+        // LOGGING: USER APPROVAL
         logActivity(
-            req, 
-            'APPROVE', 
-            `Approved user registration for ${user.email} as ${targetRole}`, 
-            'User', 
+            req,
+            'APPROVE',
+            `Approved user registration for ${user.email} as ${targetRole}`,
+            'User',
             user._id
         );
 

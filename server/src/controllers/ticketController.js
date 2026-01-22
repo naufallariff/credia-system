@@ -1,6 +1,7 @@
 const ticketService = require('../services/ticketService');
 const ModificationTicket = require('../models/ModificationTicket');
 const { successResponse, errorResponse } = require('../utils/response');
+const { logActivity } = require('../services/logService');
 
 /**
  * Create Request Ticket
@@ -12,6 +13,15 @@ const createRequest = async (req, res, next) => {
 
         const ticket = await ticketService.createTicket(
             req.user.id, targetModel, targetId, requestType, proposedData, reason
+        );
+
+        // LOGGING: TICKET CREATION
+        logActivity(
+            req,
+            'CREATE_TICKET',
+            `Created modification ticket [${requestType}] for ${targetModel}`,
+            'ModificationTicket',
+            ticket._id
         );
 
         return successResponse(res, 'Ticket created successfully', ticket, 201);
@@ -39,12 +49,12 @@ const approveRequest = async (req, res, next) => {
             ticketId, req.user.id, action, note
         );
 
-        // [NEW] LOGGING: TICKET RESOLUTION
+        // LOGGING: TICKET RESOLUTION
         logActivity(
-            req, 
-            action, // 'APPROVE' atau 'REJECT'
-            `Ticket ${result.ticket_no} resolved. Action: ${action}`, 
-            'ModificationTicket', 
+            req,
+            action, // 'APPROVE' or 'REJECT'
+            `Ticket ${result.ticket_no} resolved. Action: ${action}`,
+            'ModificationTicket',
             result._id
         );
 

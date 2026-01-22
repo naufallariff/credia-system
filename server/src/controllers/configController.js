@@ -1,5 +1,6 @@
 const GlobalConfig = require('../models/GlobalConfig');
 const { successResponse, errorResponse } = require('../utils/response');
+const { logActivity } = require('../services/logService');
 
 /**
  * Get Global Configuration
@@ -45,15 +46,15 @@ const updateConfig = async (req, res, next) => {
             { new: true, upsert: true, setDefaultsOnInsert: true }
         );
 
-        // [NEW] LOGGING: CONFIGURATION CHANGE
-        // Mencatat detail apa yang berubah
+        // LOGGING: CONFIGURATION CHANGE
+        // Record details of what changed
         const changes = `DP: ${req.body.min_dp_percent}%, Interest Tiers Updated`;
-        
+
         logActivity(
-            req, 
-            'CONFIG_CHANGE', 
-            `System global configuration updated. ${changes}`, 
-            'GlobalConfig', 
+            req,
+            'CONFIG_CHANGE',
+            `System global configuration updated. ${changes}`,
+            'GlobalConfig',
             config._id
         );
 
