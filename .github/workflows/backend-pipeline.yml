@@ -11,32 +11,39 @@ on:
       - 'server/**'
       - '.github/workflows/backend-ci.yml'
 
-# Concurrency: Membatalkan job lama jika ada push baru di branch yang sama (Hemat Resource)
 concurrency:
   group: backend-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # STAGE 1: QUALITY ASSURANCE (Jalan di SEMUA branch)
+  # STAGE 1: QUALITY ASSURANCE
   backend-qa:
     name: 🛡️ QA & Integration Test
     runs-on: ubuntu-latest
     
-    # Native Service Container (Standard Enterprise Performance)
-    services:
-      mongodb:
-        image: mongo:6.0
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd mongosh
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
+    # HAPUS block 'services' di sini. Kita akan jalankan manual di steps.
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: 🚀 Start MongoDB (Replica Set)
+        run: |
+          # 1. Start Mongo Container with ReplSet Flag
+          docker run -d -p 27017:27017 --name mongodb mongo:6.0 --replSet rs0
+          
+          # 2. Wait for Mongo to be ready
+          echo "Waiting for MongoDB to start..."
+          until docker exec mongodb mongosh --eval "db.runCommand('ping').ok" &>/dev/null; do
+            sleep 1
+          done
+          
+          # 3. Initiate Replica Set
+          echo "Initiating Replica Set..."
+          docker exec mongodb mongosh --eval "rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'localhost:27017'}]})"
+          
+          # 4. Wait for Replica Set to be Primary
+          sleep 3
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
@@ -57,27 +64,26 @@ jobs:
         working-directory: ./server
         env:
           PORT: 5000
-          MONGO_URI: mongodb://localhost:27017/credia_test_db
+          # Tambahkan directConnection=true untuk memaksa koneksi ke node primary
+          MONGO_URI: mongodb://localhost:27017/credia_test_db?replicaSet=rs0&directConnection=true
           JWT_SECRET: 'ci_test_dummy_secret_key_12345'
           NODE_ENV: test
         run: |
-          # 1. Seed Database (Pastikan seeder aman ditimpa)
+          # 1. Seed Database
           node src/seeders/runner.js
           
-          # 2. Start Server Background & Redirect Log ke file
+          # 2. Start Server Background
           npm start > server.log 2>&1 &
           SERVER_PID=$!
           
-          # 3. Wait for Port (Wajib sudah install wait-on di package.json)
-          echo "Waiting for server to be ready..."
+          # 3. Wait for Port
           npx wait-on tcp:5000 --timeout 15000
           
           # 4. Run Tests
-          echo "Running Test Suite..."
           node tests/run_all.js
           EXIT_CODE=$?
           
-          # 5. Jika Gagal, Tampilkan Log Server untuk Debugging
+          # 5. Debug Log if Failed
           if [ $EXIT_CODE -ne 0 ]; then
             echo "::error::Test Failed! Showing Server Logs:"
             cat server.log
@@ -87,11 +93,10 @@ jobs:
           kill $SERVER_PID
           exit $EXIT_CODE
 
-  # STAGE 2: AUTO-MERGE (HANYA jalan jika branch adalah FEATURE)
+  # STAGE 2: AUTO-MERGE
   promote-to-dev:
     name: 🚀 Promote Feature to Dev
     needs: backend-qa
-    # LOGIC MAESTRO: Hanya merge jika sukses DAN source branch adalah fitur
     if: success() && (startsWith(github.ref, 'refs/heads/feat/') || github.ref_name == 'server-core')
     runs-on: ubuntu-latest
     permissions:
@@ -101,7 +106,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Wajib untuk merge history
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Merge Feature into Dev
@@ -109,14 +114,11 @@ jobs:
           git config user.name "Credia CI Bot"
           git config user.email "ci@credia.system"
           
-          # Checkout Target Branch (Dev)
           git fetch origin dev
           git checkout dev
           git pull origin dev
           
-          # Merge Source Branch (Feature)
           echo "Merging ${{ github.ref_name }} into dev..."
           git merge origin/${{ github.ref_name }} --no-ff -m "chore(backend): merge ${{ github.ref_name }} to dev [skip ci]"
           
-          # Push back to Dev
           git push origin dev
