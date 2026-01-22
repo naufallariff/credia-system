@@ -3,7 +3,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const colors = require('colors');
-const { sendResponse } = require('./utils/response');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+const hpp = require('hpp');
+const { errorResponse, successResponse } = require('./utils/response'); // FIX: Import Wrapper
 
 // Route Imports
 const authRoutes = require('./routes/authRoutes');
@@ -15,12 +18,18 @@ const configRoutes = require('./routes/configRoutes');
 
 const app = express();
 
-// Middleware Security & Utility
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
+// --- 1. SECURITY & UTILITY MIDDLEWARE ---
+app.use(helmet()); // Secure HTTP Headers
+app.use(cors()); // Allow Cross-Origin
+app.use(express.json({ limit: '10kb' })); // Body limit prevents DoS
+app.use(express.urlencoded({ extended: true }));
 
-// Logger
+// Data Sanitization
+app.use(mongoSanitize()); // Prevent NoSQL Injection (remove $ signs)
+app.use(xss()); // Prevent XSS Attacks
+app.use(hpp()); // Prevent HTTP Parameter Pollution
+
+// Logger (Development Only)
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan((tokens, req, res) => {
         const status = tokens.status(req, res);
@@ -35,7 +44,7 @@ if (process.env.NODE_ENV === 'development') {
     }));
 }
 
-// Routes Registration
+// --- 2. ROUTES REGISTRATION ---
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/contracts', contractRoutes);
@@ -43,23 +52,28 @@ app.use('/api/tickets', ticketRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/config', configRoutes);
 
-// Health Check Endpoint
+// Health Check
 app.get('/', (req, res) => {
-    res.status(200).json({ status: 'UP', message: 'Credia Enterprise Server V3.0' });
+    return successResponse(res, 'Credia Enterprise Server V3.0 is running');
 });
 
-// Global Error Handler
+// Handle 404 (Not Found)
+app.all('*', (req, res, next) => {
+    return errorResponse(res, `Route ${req.originalUrl} not found on this server`, 404);
+});
+
+// --- 3. GLOBAL ERROR HANDLER ---
 app.use((err, req, res, next) => {
+    // Determine status code (support custom throws like { statusCode: 400 })
     const statusCode = err.statusCode || 500;
     const message = err.message || 'Internal Server Error';
-    
-    // Log critical errors
+
+    // Log critical server errors
     if (statusCode >= 500) {
         console.error(`[CRITICAL] ${err.stack}`.red);
     }
 
-    sendResponse(res, statusCode, false, message);
+    return errorResponse(res, message, statusCode);
 });
 
-// EXPORT THE APP, DO NOT LISTEN HERE
 module.exports = app;
