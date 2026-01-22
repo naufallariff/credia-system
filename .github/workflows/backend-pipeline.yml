@@ -58,24 +58,32 @@ jobs:
         env:
           PORT: 5000
           MONGO_URI: mongodb://localhost:27017/credia_test_db
-          JWT_SECRET: 'ci_test_dummy_secret_key_12345' # Safe for testing only
+          JWT_SECRET: 'ci_test_dummy_secret_key_12345'
           NODE_ENV: test
         run: |
-          # 1. Seed Database
+          # 1. Seed Database (Pastikan seeder aman ditimpa)
           node src/seeders/runner.js
           
-          # 2. Start Server Background
-          npm start &
+          # 2. Start Server Background & Redirect Log ke file
+          npm start > server.log 2>&1 &
           SERVER_PID=$!
           
-          # 3. Wait for Port (Requires: npm install -D wait-on)
-          npx wait-on tcp:5000 --timeout 10000
+          # 3. Wait for Port (Wajib sudah install wait-on di package.json)
+          echo "Waiting for server to be ready..."
+          npx wait-on tcp:5000 --timeout 15000
           
           # 4. Run Tests
+          echo "Running Test Suite..."
           node tests/run_all.js
           EXIT_CODE=$?
           
-          # 5. Cleanup
+          # 5. Jika Gagal, Tampilkan Log Server untuk Debugging
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "::error::Test Failed! Showing Server Logs:"
+            cat server.log
+          fi
+          
+          # 6. Cleanup
           kill $SERVER_PID
           exit $EXIT_CODE
 
