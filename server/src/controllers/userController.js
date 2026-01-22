@@ -1,7 +1,8 @@
 const User = require('../models/User');
 const { generateId } = require('../utils/idGenerator');
-const { successResponse, errorResponse } = require('../utils/response'); // Updated import
+const { successResponse, errorResponse } = require('../utils/response');
 const { sendNotification } = require('../services/notificationService');
+const { logActivity } = require('../services/logService');
 const crypto = require('crypto');
 const emailService = require('../services/emailService');
 
@@ -59,6 +60,15 @@ const createUser = async (req, res, next) => {
             created_by: req.user.id
         });
 
+        // LOGGING: USER MANAGEMENT
+        logActivity(
+            req,
+            'CREATE',
+            `Created new internal user: ${newUser.username} (${newUser.role})`,
+            'User',
+            newUser._id
+        );
+
         return successResponse(res, 'User created successfully', {
             id: newUser.custom_id,
             username: newUser.username
@@ -85,6 +95,9 @@ const approveUser = async (req, res, next) => {
         if (action === 'REJECT') {
             user.status = 'BANNED';
             await user.save();
+
+            logActivity(req, 'REJECT', `Rejected user registration for ${user.email}`, 'User', user._id);
+
             return successResponse(res, 'User registration rejected');
         }
 
@@ -110,6 +123,15 @@ const approveUser = async (req, res, next) => {
             'SUCCESS',
             'Account Activated',
             'Your account is active. Check your email for login credentials.'
+        );
+
+        // LOGGING: USER APPROVAL
+        logActivity(
+            req,
+            'APPROVE',
+            `Approved user registration for ${user.email} as ${targetRole}`,
+            'User',
+            user._id
         );
 
         return successResponse(res, `User approved. Credentials sent to ${user.email}`);

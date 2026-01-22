@@ -1,6 +1,7 @@
 const ticketService = require('../services/ticketService');
 const ModificationTicket = require('../models/ModificationTicket');
-const { successResponse, errorResponse } = require('../utils/response'); // Updated import
+const { successResponse, errorResponse } = require('../utils/response');
+const { logActivity } = require('../services/logService');
 
 /**
  * Create Request Ticket
@@ -12,6 +13,15 @@ const createRequest = async (req, res, next) => {
 
         const ticket = await ticketService.createTicket(
             req.user.id, targetModel, targetId, requestType, proposedData, reason
+        );
+
+        // LOGGING: TICKET CREATION
+        logActivity(
+            req,
+            'CREATE_TICKET',
+            `Created modification ticket [${requestType}] for ${targetModel}`,
+            'ModificationTicket',
+            ticket._id
         );
 
         return successResponse(res, 'Ticket created successfully', ticket, 201);
@@ -37,6 +47,15 @@ const approveRequest = async (req, res, next) => {
 
         const result = await ticketService.processTicket(
             ticketId, req.user.id, action, note
+        );
+
+        // LOGGING: TICKET RESOLUTION
+        logActivity(
+            req,
+            action, // 'APPROVE' or 'REJECT'
+            `Ticket ${result.ticket_no} resolved. Action: ${action}`,
+            'ModificationTicket',
+            result._id
         );
 
         return successResponse(res, `Ticket ${action.toLowerCase()} successful`, result);

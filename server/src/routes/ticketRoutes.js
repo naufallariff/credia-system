@@ -1,22 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const { 
-    createRequest, 
-    approveRequest, 
-    getTickets 
+const {
+    createRequest,
+    approveRequest,
+    getTickets
 } = require('../controllers/ticketController');
-const { protect } = require('../middlewares/authMiddleware');
-const { authorize } = require('../middlewares/roleMiddleware');
+const { protect, authorize } = require('../middlewares/authMiddleware');
 
 router.use(protect);
 
-// Read Tickets (Staff sees own, Admin sees all)
+// View Tickets: Transparansi untuk semua internal tim
 router.get('/', authorize('STAFF', 'ADMIN', 'SUPERADMIN'), getTickets);
 
-// Create Request (Staff)
+// Create Request: Staff yang menemukan kesalahan/perlu void
 router.post('/', authorize('STAFF'), createRequest);
 
-// Process Request (Admin Only)
-router.put('/:ticketId/approve', authorize('ADMIN', 'SUPERADMIN'), approveRequest);
+// Resolution: Admin yang memutuskan apakah request valid
+router.patch('/:ticketId/resolution', authorize('ADMIN', 'SUPERADMIN'), approveRequest);
 
 module.exports = router;

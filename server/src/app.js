@@ -2,8 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const colors = require('colors');
-const { sendResponse } = require('./utils/response');
+require('colors'); // Load colors extensions
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');
+
+// Utility & Middleware Imports
+const { successResponse, errorResponse } = require('./utils/response');
+const errorHandler = require('./middlewares/errorMiddleware');
 
 // Route Imports
 const authRoutes = require('./routes/authRoutes');
@@ -12,15 +17,35 @@ const userRoutes = require('./routes/userRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const configRoutes = require('./routes/configRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app = express();
 
-// Middleware Security & Utility
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
+// --- 1. SECURITY & UTILITY MIDDLEWARE ---
 
-// Logger
+// Set Security HTTP Headers
+app.use(helmet());
+
+// Enable Cross-Origin Resource Sharing
+app.use(cors());
+
+// Body Parser with strict limit to prevent DoS
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Data Sanitization against NoSQL Query Injection
+// app.use(
+//     mongoSanitize({
+//         onSanitize: ({ req, key }) => {
+//             console.warn(`[SECURITY] This request[${key}] is sanitized`, req[key]);
+//         },
+//     })
+// );
+
+// Prevent HTTP Parameter Pollution
+app.use(hpp());
+
+// Development Logging
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan((tokens, req, res) => {
         const status = tokens.status(req, res);
@@ -35,31 +60,29 @@ if (process.env.NODE_ENV === 'development') {
     }));
 }
 
-// Routes Registration
+// --- 2. ROUTE MOUNTING ---
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/contracts', contractRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/config', configRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Health Check Endpoint
 app.get('/', (req, res) => {
-    res.status(200).json({ status: 'UP', message: 'Credia Enterprise Server V3.0' });
+    return successResponse(res, 'Credia Enterprise Server V3.0 is operational');
 });
 
-// Global Error Handler
-app.use((err, req, res, next) => {
-    const statusCode = err.statusCode || 500;
-    const message = err.message || 'Internal Server Error';
-    
-    // Log critical errors
-    if (statusCode >= 500) {
-        console.error(`[CRITICAL] ${err.stack}`.red);
-    }
+// --- 3. ERROR HANDLING ---
 
-    sendResponse(res, statusCode, false, message);
+// 404 Not Found Handler (Fallback Middleware)
+// FIX: Using app.use() instead of app.all('*') to prevent Regex errors in newer Express versions
+app.use((req, res, next) => {
+    return errorResponse(res, `Route ${req.originalUrl} not found on this server`, 404);
 });
 
-// EXPORT THE APP, DO NOT LISTEN HERE
+// Global Error Handler Middleware
+app.use(errorHandler);
+
 module.exports = app;
