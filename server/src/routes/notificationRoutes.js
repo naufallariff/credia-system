@@ -5,8 +5,9 @@ const { protect } = require('../middlewares/authMiddleware');
 
 router.use(protect);
 
+// User hanya boleh akses notifikasi miliknya sendiri
 router.get('/', getMyNotifications);
-router.put('/:id/read', markRead);
-router.put('/read-all', markAllRead);
+router.patch('/:id/read', markRead);
+router.patch('/read-all', markAllRead);
 
 module.exports = router;

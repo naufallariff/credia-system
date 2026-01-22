@@ -3,14 +3,12 @@ const router = express.Router();
 const { login, register, getMe, changeInitialPassword } = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
 
-// Public
-router.post('/register', register);
+// Public Access
+router.post('/register', register); // Client Self-Registration
 router.post('/login', login);
 
-// Protected
+// Protected Access (All Authenticated Users)
 router.get('/me', protect, getMe);
-
-// [NEW] Change Password Flow
-router.post('/change-initial-password', protect, changeInitialPassword);
+router.patch('/change-initial-password', protect, changeInitialPassword);
 
 module.exports = router;
