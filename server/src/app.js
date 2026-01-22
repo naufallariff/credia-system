@@ -4,7 +4,6 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 require('colors'); // Load colors extensions
 const mongoSanitize = require('express-mongo-sanitize');
-const xss = require('xss-clean');
 const hpp = require('hpp');
 
 // Utility & Middleware Imports
@@ -28,7 +27,6 @@ const app = express();
 app.use(helmet());
 
 // Enable Cross-Origin Resource Sharing
-// In production, strictly define the 'origin' options
 app.use(cors());
 
 // Body Parser with strict limit to prevent DoS
@@ -36,10 +34,13 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Data Sanitization against NoSQL Query Injection
-app.use(mongoSanitize());
-
-// Data Sanitization against XSS
-app.use(xss());
+// app.use(
+//     mongoSanitize({
+//         onSanitize: ({ req, key }) => {
+//             console.warn(`[SECURITY] This request[${key}] is sanitized`, req[key]);
+//         },
+//     })
+// );
 
 // Prevent HTTP Parameter Pollution
 app.use(hpp());
@@ -75,13 +76,13 @@ app.get('/', (req, res) => {
 
 // --- 3. ERROR HANDLING ---
 
-// 404 Not Found Handler
-app.all('*', (req, res, next) => {
+// 404 Not Found Handler (Fallback Middleware)
+// FIX: Using app.use() instead of app.all('*') to prevent Regex errors in newer Express versions
+app.use((req, res, next) => {
     return errorResponse(res, `Route ${req.originalUrl} not found on this server`, 404);
 });
 
 // Global Error Handler Middleware
-// Delegates detailed error logic to the dedicated middleware
 app.use(errorHandler);
 
 module.exports = app;
