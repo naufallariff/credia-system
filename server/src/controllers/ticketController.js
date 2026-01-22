@@ -39,6 +39,15 @@ const approveRequest = async (req, res, next) => {
             ticketId, req.user.id, action, note
         );
 
+        // [NEW] LOGGING: TICKET RESOLUTION
+        logActivity(
+            req, 
+            action, // 'APPROVE' atau 'REJECT'
+            `Ticket ${result.ticket_no} resolved. Action: ${action}`, 
+            'ModificationTicket', 
+            result._id
+        );
+
         return successResponse(res, `Ticket ${action.toLowerCase()} successful`, result);
     } catch (error) {
         next(error);

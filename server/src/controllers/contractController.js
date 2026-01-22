@@ -4,11 +4,8 @@ const ticketService = require('../services/ticketService');
 const paymentService = require('../services/paymentService');
 const { generateId } = require('../utils/idGenerator');
 const { successResponse, errorResponse } = require('../utils/response');
+const { logActivity } = require('../services/logService');
 
-/**
- * 1. GET CONTRACTS (LIST)
- * Keeps listing logic here for simplicity, or move to service if advanced filtering needed.
- */
 const getContracts = async (req, res, next) => {
     try {
         const { role, id } = req.user;
@@ -56,13 +53,8 @@ const getContracts = async (req, res, next) => {
     }
 };
 
-/**
- * 2. CREATE CONTRACT
- * Delegates business logic to Service.
- */
 const createContract = async (req, res, next) => {
     try {
-        // Prepare DTO (Data Transfer Object)
         const submissionData = {
             clientId: req.body.client_id,
             otr: req.body.otr_price,
@@ -71,8 +63,15 @@ const createContract = async (req, res, next) => {
             startDate: new Date()
         };
 
-        // Call Service
         const newContract = await contractService.createContractSubmission(req.user.id, submissionData);
+
+        logActivity(
+            req,
+            'CREATE',
+            `Created contract draft for client ${newContract.client_name_snapshot}`,
+            'Contract',
+            newContract._id
+        );
 
         return successResponse(res, 'Contract submitted for approval', newContract, 201);
     } catch (error) {
@@ -80,10 +79,6 @@ const createContract = async (req, res, next) => {
     }
 };
 
-/**
- * 3. GET DETAIL
- * Delegates logic to Service (includes penalty projection).
- */
 const getContractDetail = async (req, res, next) => {
     try {
         const contract = await contractService.getContractDetail(req.params.id, req.user);
@@ -93,9 +88,6 @@ const getContractDetail = async (req, res, next) => {
     }
 };
 
-/**
- * 4. UPDATE STATUS (ADMIN APPROVAL)
- */
 const updateContractStatus = async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -125,15 +117,21 @@ const updateContractStatus = async (req, res, next) => {
         }
 
         await contract.save();
+
+        logActivity(
+            req,
+            action, // 'APPROVE' or 'REJECT'
+            `Contract ${action}D by ${req.user.name}. Reason: ${reason || 'N/A'}`,
+            'Contract',
+            contract._id
+        );
+
         return successResponse(res, `Contract ${action === 'APPROVE' ? 'Activated' : 'Rejected'}`, contract);
     } catch (error) {
         next(error);
     }
 };
 
-/**
- * 5. PAYMENT PROCESSING
- */
 const makePayment = async (req, res, next) => {
     try {
         const { month, amount } = req.body;
@@ -144,15 +142,21 @@ const makePayment = async (req, res, next) => {
         }
 
         const transaction = await paymentService.processPayment(id, month, amount, req.user.id);
+
+        logActivity(
+            req,
+            'PAYMENT',
+            `Received payment Rp ${amount.toLocaleString()} for Month ${month}`,
+            'Transaction',
+            transaction._id
+        );
+
         return successResponse(res, 'Payment processed', transaction);
     } catch (error) {
-        next(error); // Global Error Handler will catch standard errors
+        next(error);
     }
 };
 
-/**
- * 6. REQUEST CHANGE (TICKET)
- */
 const requestChange = async (req, res, next) => {
     try {
         const { type, reason, proposedData } = req.body;
@@ -165,6 +169,14 @@ const requestChange = async (req, res, next) => {
             type,
             proposedData,
             reason
+        );
+
+        logActivity(
+            req,
+            'CREATE_TICKET',
+            `Created modification ticket [${type}] for contract`,
+            'ModificationTicket',
+            ticket._id
         );
 
         return successResponse(res, 'Ticket created', ticket, 201);

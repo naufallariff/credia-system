@@ -45,6 +45,18 @@ const updateConfig = async (req, res, next) => {
             { new: true, upsert: true, setDefaultsOnInsert: true }
         );
 
+        // [NEW] LOGGING: CONFIGURATION CHANGE
+        // Mencatat detail apa yang berubah
+        const changes = `DP: ${req.body.min_dp_percent}%, Interest Tiers Updated`;
+        
+        logActivity(
+            req, 
+            'CONFIG_CHANGE', 
+            `System global configuration updated. ${changes}`, 
+            'GlobalConfig', 
+            config._id
+        );
+
         return successResponse(res, 'System configuration updated successfully', config);
     } catch (error) {
         next(error);
