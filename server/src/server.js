@@ -1,18 +1,16 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 require('colors');
+const initScheduler = require('./jobs'); // [NEW] Import Scheduler
 
 // 1. Handle Uncaught Exceptions
-// Must be defined before any other code to catch synchronous errors
 process.on('uncaughtException', (err) => {
     console.log('UNCAUGHT EXCEPTION! Shutting down...'.red.bold);
     console.log(err.name, err.message);
     process.exit(1);
 });
 
-// Load environment variables
 dotenv.config();
-
 const app = require('./app');
 
 // Configuration
@@ -31,22 +29,24 @@ const startServer = async () => {
         const conn = await mongoose.connect(MONGO_URI);
         console.log(`[INIT] Database Connected: ${conn.connection.host}`.cyan.underline);
 
+        // [NEW] Initialize Background Jobs
+        // Must be called after DB connection is established
+        initScheduler();
+
         const server = app.listen(PORT, () => {
             console.log(`[INFO] Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`.yellow.bold);
         });
 
         // 3. Handle Unhandled Promise Rejections
-        // Catches asynchronous errors that are not caught in try/catch blocks
         process.on('unhandledRejection', (err) => {
             console.log('UNHANDLED REJECTION! Shutting down...'.red.bold);
             console.log(err.name, err.message);
-            // Gracefully close server first, then exit
             server.close(() => {
                 process.exit(1);
             });
         });
 
-        // 4. Graceful Shutdown (SIGTERM/SIGINT)
+        // 4. Graceful Shutdown
         const gracefulShutdown = () => {
             console.log('\n[INFO] Termination signal received. Closing server...'.magenta);
             server.close(async () => {
