@@ -5,6 +5,7 @@ const { generateAmortization } = require('../lib/math');
 /**
  * Seeder for Contract entities.
  * Maps specific financial scenarios to the created user personas.
+ * Implements "Two-ID Principle": Submissions get ID immediately, Contracts get ID only upon approval.
  */
 const seedContracts = async (usersMap) => {
     console.log('[03] Seeding Contracts (Financial Scenarios)...');
@@ -22,12 +23,11 @@ const seedContracts = async (usersMap) => {
     const clientNew = getClient('emma.watson@live.com');
     const clientRejected = getClient('ryan.reynolds@icloud.com');
     const clientVoid = getClient('tom.holland@protonmail.com');
-    // Note: Unverified and Suspended clients intentionally have no contracts.
 
     const contracts = [];
 
     // --- SCENARIO 1: CLOSED / FULLY PAID (Historical Data) ---
-    // Loan finished 2 months ago.
+    // Has Contract No.
     {
         const startDate = new Date();
         startDate.setMonth(startDate.getMonth() - 14);
@@ -55,11 +55,11 @@ const seedContracts = async (usersMap) => {
     }
 
     // --- SCENARIO 2: ACTIVE / SMOOTH (Good Payer) ---
-    // 50% progress, perfect payment record.
+    // Has Contract No.
     {
         const startDate = new Date();
         startDate.setMonth(startDate.getMonth() - 6);
-        const { schedule, monthlyInstallment } = generateAmortization(45000000, 12, 24, startDate); // 2 Year loan
+        const { schedule, monthlyInstallment } = generateAmortization(45000000, 12, 24, startDate);
 
         let totalPaid = 0;
         for (let i = 0; i < 6; i++) {
@@ -83,20 +83,18 @@ const seedContracts = async (usersMap) => {
     }
 
     // --- SCENARIO 3: ACTIVE / DELINQUENT (Late Payer) ---
-    // Missed last 3 payments. High risk.
+    // Has Contract No.
     {
         const startDate = new Date();
         startDate.setMonth(startDate.getMonth() - 5);
-        const { schedule, monthlyInstallment } = generateAmortization(80000000, 14, 36, startDate); // 3 Year loan
+        const { schedule, monthlyInstallment } = generateAmortization(80000000, 14, 36, startDate);
 
         let totalPaid = 0;
-        // Paid first 2 months
         for (let i = 0; i < 2; i++) {
             schedule[i].status = 'PAID';
             schedule[i].paid_at = schedule[i].due_date;
             totalPaid += schedule[i].amount;
         }
-        // Month 3, 4, 5 are LATE
         schedule[2].status = 'LATE';
         schedule[3].status = 'LATE';
         schedule[4].status = 'LATE';
@@ -116,6 +114,7 @@ const seedContracts = async (usersMap) => {
     }
 
     // --- SCENARIO 4: PENDING ACTIVATION (Approval Queue) ---
+    // NO Contract No (Application Stage).
     {
         const { schedule, monthlyInstallment } = generateAmortization(25000000, 12, 12, new Date());
         const contract = createContractObj({
@@ -128,13 +127,14 @@ const seedContracts = async (usersMap) => {
             paid: 0,
             status: 'PENDING_ACTIVATION',
             schedule,
-            contractNo: null
+            contractNo: undefined // Explicitly undefined
         });
         contract.submission_id = 'SUB-2026-NEW-004';
         contracts.push(contract);
     }
 
     // --- SCENARIO 5: REJECTED (Bad Credit) ---
+    // NO Contract No (Rejected at Application Stage).
     {
         const { schedule, monthlyInstallment } = generateAmortization(120000000, 12, 48, new Date());
         const contract = createContractObj({
@@ -147,13 +147,14 @@ const seedContracts = async (usersMap) => {
             paid: 0,
             status: 'REJECTED',
             schedule,
-            contractNo: 'CTR-2026-RJ-005'
+            contractNo: undefined // Explicitly undefined
         });
         contract.void_reason = "Applicant debt-to-income ratio exceeds 40%. High credit risk.";
         contracts.push(contract);
     }
 
     // --- SCENARIO 6: VOID (Administrative Error) ---
+    // Has Contract No (Was active, then voided).
     {
         const { schedule, monthlyInstallment } = generateAmortization(10000000, 12, 6, new Date());
         const contract = createContractObj({
@@ -173,7 +174,7 @@ const seedContracts = async (usersMap) => {
     }
 
     // --- FILLER DATA (For Load Testing) ---
-    // Generate 15 pending applications for pagination
+    // Pending applications have NO Contract No.
     for (let i = 0; i < 15; i++) {
         const client = usersMap.fillers[i];
         const principal = Number(faker.commerce.price({ min: 10000000, max: 60000000, dec: 0 }));
@@ -189,7 +190,7 @@ const seedContracts = async (usersMap) => {
             paid: 0,
             status: 'PENDING_ACTIVATION',
             schedule,
-            contractNo: null
+            contractNo: undefined // Explicitly undefined
         });
         contract.submission_id = `SUB-FILL-${faker.string.alphanumeric(6).toUpperCase()}`;
         contracts.push(contract);
@@ -204,9 +205,8 @@ const createContractObj = ({ client, maker, approver, principal, duration, insta
     const otr = Math.ceil(principal / 0.8); // Assuming 20% DP
     const dp = otr - principal;
 
-    return {
+    const baseObj = {
         submission_id: `SUB-${faker.string.alphanumeric(8).toUpperCase()}`,
-        contract_no: contractNo,
         client: client._id,
         client_name_snapshot: client.name,
         created_by: maker._id,
@@ -224,6 +224,14 @@ const createContractObj = ({ client, maker, approver, principal, duration, insta
         amortization: schedule,
         void_reason: null
     };
+
+    // CONDITIONAL PROPERTY: Only add contract_no if it exists (is not undefined/null).
+    // This ensures Mongoose/MongoDB Sparse Index works correctly (ignores document if field missing).
+    if (contractNo) {
+        baseObj.contract_no = contractNo;
+    }
+
+    return baseObj;
 };
 
 module.exports = seedContracts;

@@ -10,39 +10,36 @@ const amortizationSchema = new mongoose.Schema({
 });
 
 const contractSchema = new mongoose.Schema({
-    // Identifiers
-    submission_id: { type: String, required: true, unique: true }, // Created on submit
-    contract_no: { type: String, unique: true, sparse: true }, // Created on Approval
-    
-    // Relations
-    client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    client_name_snapshot: { type: String, required: true }, // For performance
-    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Staff
-    approved_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Admin
+    // 1. Identifiers (Submission ID Wajib, Contract No Opsional)
+    submission_id: { type: String, required: true, unique: true },
 
-    // Financials
+    // FIX: Hapus 'default: null'. Jika belum ada, jangan simpan field ini sama sekali.
+    contract_no: { type: String, unique: true, sparse: true },
+
+    // ... Sisa field (Client, Financials, dll) sama persis ...
+    client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    client_name_snapshot: { type: String, required: true },
+    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    approved_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+
     otr_price: { type: Number, required: true },
     dp_amount: { type: Number, required: true },
     principal_amount: { type: Number, required: true },
-    interest_rate: { type: Number, required: true }, // Flat Yearly
-    
-    // Duration Logic
-    duration_month: { type: Number, required: true }, // Stored as integer
-    
-    // Installment Logic
+    interest_rate: { type: Number, required: true },
+
+    duration_month: { type: Number, required: true },
     monthly_installment: { type: Number, required: true },
     total_loan: { type: Number, required: true },
     remaining_loan: { type: Number, required: true },
     total_paid: { type: Number, default: 0 },
 
-    // Lifecycle
-    status: { 
-        type: String, 
-        enum: ['DRAFT', 'PENDING_ACTIVATION', 'ACTIVE', 'LOCKED', 'CLOSED', 'VOID', 'REJECTED'], 
+    status: {
+        type: String,
+        enum: ['DRAFT', 'PENDING_ACTIVATION', 'ACTIVE', 'LOCKED', 'CLOSED', 'VOID', 'REJECTED'],
         default: 'PENDING_ACTIVATION',
         index: true
     },
-    
+
     void_reason: { type: String },
     amortization: [amortizationSchema]
 }, {
