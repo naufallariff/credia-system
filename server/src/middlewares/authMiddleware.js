@@ -4,32 +4,39 @@ const { errorResponse } = require('../utils/response');
 
 /**
  * Protect Middleware
- * Memastikan request memiliki Header Authorization: Bearer <token> yang valid.
+ * Verifies JWT token and attaches the user context to the request.
+ * Implements strict security checks for account status.
  */
 const protect = async (req, res, next) => {
     let token;
 
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
-            // 1. Ambil token dari header (buang kata 'Bearer ')
+            // 1. Extract token
             token = req.headers.authorization.split(' ')[1];
 
-            // 2. Verifikasi tanda tangan token
+            // 2. Verify Token Signature
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // 3. Cek apakah user pemilik token masih ada di database
-            // Gunakan .select('-password') agar password hash tidak ikut terbawa ke memory request
+            // 3. Check if User still exists
             const user = await User.findById(decoded.id).select('-password');
-
             if (!user) {
-                return errorResponse(res, 'User not found or deactivated', 401);
+                return errorResponse(res, 'User no longer exists', 401);
             }
 
-            // 4. Tempelkan objek user ke dalam request object agar bisa dipakai di controller
+            // 4. Security: Fail-Fast if Account is Suspended/Banned
+            // This prevents suspended users from accessing ANY protected route immediately
+            if (['SUSPENDED', 'BANNED'].includes(user.status)) {
+                return errorResponse(res, 'Account access has been suspended or banned', 403);
+            }
+
+            // 5. Attach User to Request Context
             req.user = user;
             next();
+
         } catch (error) {
-            return errorResponse(res, 'Not authorized, token failed', 401, error);
+            console.error('[AUTH ERROR]', error.message);
+            return errorResponse(res, 'Not authorized, token failed', 401);
         }
     }
 
@@ -40,13 +47,19 @@ const protect = async (req, res, next) => {
 
 /**
  * Role Guard Middleware
- * Membatasi akses hanya untuk role tertentu (misal: hanya ADMIN).
+ * Restricts access to specific user roles.
+ * Usage: authorize('ADMIN', 'SUPERADMIN')
  */
 const authorize = (...roles) => {
     return (req, res, next) => {
-        if (!roles.includes(req.user.role)) {
-            return errorResponse(res, `User role '${req.user.role}' is not authorized to access this route`, 403);
+        if (!req.user) {
+            return errorResponse(res, 'User context missing', 401);
         }
+
+        if (!roles.includes(req.user.role)) {
+            return errorResponse(res, `Access denied. Role '${req.user.role}' is not authorized.`, 403);
+        }
+
         next();
     };
 };
