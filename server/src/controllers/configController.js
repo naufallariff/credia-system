@@ -1,5 +1,5 @@
 const GlobalConfig = require('../models/GlobalConfig');
-const { successResponse, errorResponse } = require('../utils/response'); // UPDATE: Import Wrapper
+const { successResponse, errorResponse } = require('../utils/response');
 
 /**
  * Get Global Configuration
@@ -8,11 +8,11 @@ const { successResponse, errorResponse } = require('../utils/response'); // UPDA
 const getConfig = async (req, res, next) => {
     try {
         const config = await GlobalConfig.findOne({ key: 'LOAN_RULES' }).lean();
-        
+
         // Return default structure if config doesn't exist yet
-        const data = config || { 
-            min_dp_percent: 20, 
-            interest_tiers: [] 
+        const data = config || {
+            min_dp_percent: 20,
+            interest_tiers: []
         };
 
         return successResponse(res, 'System configuration retrieved', data);
@@ -34,6 +34,7 @@ const updateConfig = async (req, res, next) => {
             return errorResponse(res, 'Unauthorized to change system rules', 403);
         }
 
+        // Use findOneAndUpdate with upsert to handle initialization automatically
         const config = await GlobalConfig.findOneAndUpdate(
             { key: 'LOAN_RULES' },
             {

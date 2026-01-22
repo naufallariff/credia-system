@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const { generateId } = require('../utils/idGenerator');
-const { successResponse, errorResponse } = require('../utils/response'); // Updated import
+const { successResponse, errorResponse } = require('../utils/response');
 const { sendNotification } = require('../services/notificationService');
 const crypto = require('crypto');
 const emailService = require('../services/emailService');

@@ -1,6 +1,6 @@
 const ticketService = require('../services/ticketService');
 const ModificationTicket = require('../models/ModificationTicket');
-const { successResponse, errorResponse } = require('../utils/response'); // Updated import
+const { successResponse, errorResponse } = require('../utils/response');
 
 /**
  * Create Request Ticket

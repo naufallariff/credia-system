@@ -1,5 +1,5 @@
 const notificationService = require('../services/notificationService');
-const { successResponse } = require('../utils/response'); // Updated import
+const { successResponse } = require('../utils/response');
 
 /**
  * Get User Notifications
