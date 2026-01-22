@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const { generateId } = require('../utils/idGenerator');
-const { successResponse, errorResponse } = require('../utils/response'); // UPDATE: Import Wrapper
+const { successResponse, errorResponse } = require('../utils/response');
 const jwt = require('jsonwebtoken');
 
 /**
