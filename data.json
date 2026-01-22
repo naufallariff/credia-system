@@ -1,51 +1,94 @@
-[
-    {
-        "custom_id": "USER_SUPER_ROOT",
-        "username": "super.root",
-        "email": "root@credia.system",
-        "password": "SuperSecretPassword!1",
-        "name": "System Superadmin",
-        "role": "SUPERADMIN",
-        "status": "ACTIVE"
+{
+    "meta": {
+        "default_password": "password123",
+        "environment": "development"
     },
-    {
-        "custom_id": "USER_ADMIN_FINANCE",
-        "username": "admin.finance",
-        "email": "finance@credia.system",
-        "password": "AdminPassword!23",
-        "name": "Sarah Finance",
-        "role": "ADMIN",
-        "status": "ACTIVE",
-        "created_by": "USER_SUPER_ROOT"
-    },
-    {
-        "custom_id": "USER_STAFF_SALES",
-        "username": "staff.sales",
-        "email": "sales@credia.system",
-        "password": "StaffPassword!23",
-        "name": "Budi Sales",
-        "role": "STAFF",
-        "status": "ACTIVE",
-        "created_by": "USER_ADMIN_FINANCE"
-    },
-    {
-        "custom_id": "USER_CLIENT_ANDRI",
-        "username": "client.andri",
-        "email": "andri@gmail.com",
-        "password": "UserPassword!23",
-        "name": "Andri Wicaksono",
-        "role": "CLIENT",
-        "status": "ACTIVE",
-        "created_by": "USER_ADMIN_FINANCE"
-    },
-    {
-        "custom_id": "USER_CLIENT_DEWI",
-        "username": "client.dewi",
-        "email": "dewi@gmail.com",
-        "password": "UserPassword!23",
-        "name": "Dewi Persik",
-        "role": "CLIENT",
-        "status": "ACTIVE",
-        "created_by": "USER_ADMIN_FINANCE"
-    }
-]
+    "internal_team": [
+        {
+            "role": "SUPERADMIN",
+            "name": "Alexander Pierce",
+            "email": "alexander.pierce@credia.finance",
+            "password": "password123",
+            "description": "Full access to system configuration and user management."
+        },
+        {
+            "role": "ADMIN",
+            "name": "Sarah Jenkins",
+            "email": "sarah.jenkins@credia.finance",
+            "password": "password123",
+            "description": "Finance Admin. Use this account to approve pending contracts."
+        },
+        {
+            "role": "STAFF",
+            "name": "Emily Blunt",
+            "email": "emily.blunt@credia.finance",
+            "password": "password123",
+            "description": "Senior Sales Staff. Use this to view created contracts and client list."
+        },
+        {
+            "role": "ADMIN (SUSPENDED)",
+            "name": "Robert Vance",
+            "email": "robert.vance@credia.finance",
+            "password": "password123",
+            "description": "Test Case: Login should be denied."
+        }
+    ],
+    "clients": [
+        {
+            "scenario": "CLOSED_LOAN (Lunas)",
+            "name": "William Thacker",
+            "email": "william.thacker88@gmail.com",
+            "password": "password123",
+            "description": "Has one contract with status CLOSED. Dashboard should show completed history."
+        },
+        {
+            "scenario": "ACTIVE_SMOOTH (Lancar)",
+            "name": "Julia Roberts",
+            "email": "julia.roberts@outlook.com",
+            "password": "password123",
+            "description": "Active contract, 50% paid, no late payments. Standard happy flow."
+        },
+        {
+            "scenario": "ACTIVE_LATE (Macet)",
+            "name": "Hugh Grant",
+            "email": "hugh.grant@yahoo.com",
+            "password": "password123",
+            "description": "Active contract but 3 months overdue. Dashboard should show WARNING alerts."
+        },
+        {
+            "scenario": "PENDING_APPROVAL (Baru)",
+            "name": "Emma Watson",
+            "email": "emma.watson@live.com",
+            "password": "password123",
+            "description": "Application submitted but not yet approved. Waiting for Admin action."
+        },
+        {
+            "scenario": "REJECTED (Ditolak)",
+            "name": "Ryan Reynolds",
+            "email": "ryan.reynolds@icloud.com",
+            "password": "password123",
+            "description": "Contract rejected due to bad credit score. Should see rejection notice."
+        },
+        {
+            "scenario": "VOID (Batal)",
+            "name": "Tom Holland",
+            "email": "tom.holland@protonmail.com",
+            "password": "password123",
+            "description": "Contract voided due to admin error or cancellation."
+        },
+        {
+            "scenario": "UNVERIFIED_ACCOUNT",
+            "name": "New Registered User",
+            "email": "new.user.test@gmail.com",
+            "password": "password123",
+            "description": "New account, email not verified. Cannot apply for loans yet."
+        },
+        {
+            "scenario": "SUSPENDED_ACCOUNT",
+            "name": "Suspicious Actor",
+            "email": "fraud.alert.99@tempmail.com",
+            "password": "password123",
+            "description": "Account banned. Login should be denied."
+        }
+    ]
+}
