@@ -1,22 +1,37 @@
 const GlobalConfig = require('../models/GlobalConfig');
-const { sendResponse } = require('../utils/response');
+const { successResponse, errorResponse } = require('../utils/response'); // UPDATE: Import Wrapper
 
+/**
+ * Get Global Configuration
+ * Retrieves system-wide settings like loan rules and interest tiers.
+ */
 const getConfig = async (req, res, next) => {
     try {
         const config = await GlobalConfig.findOne({ key: 'LOAN_RULES' }).lean();
-        sendResponse(res, 200, true, 'System configuration retrieved', config);
+        
+        // Return default structure if config doesn't exist yet
+        const data = config || { 
+            min_dp_percent: 20, 
+            interest_tiers: [] 
+        };
+
+        return successResponse(res, 'System configuration retrieved', data);
     } catch (error) {
         next(error);
     }
 };
 
+/**
+ * Update Global Configuration
+ * Restricted to Superadmin and Admin roles.
+ */
 const updateConfig = async (req, res, next) => {
     try {
         const { min_dp_percent, interest_tiers } = req.body;
 
-        // Security: Only Superadmin/Admin
+        // Security: RBAC Check
         if (!['SUPERADMIN', 'ADMIN'].includes(req.user.role)) {
-            return sendResponse(res, 403, false, 'Unauthorized to change system rules');
+            return errorResponse(res, 'Unauthorized to change system rules', 403);
         }
 
         const config = await GlobalConfig.findOneAndUpdate(
@@ -26,10 +41,10 @@ const updateConfig = async (req, res, next) => {
                 interest_tiers,
                 last_updated_by: req.user.id
             },
-            { new: true, upsert: true }
+            { new: true, upsert: true, setDefaultsOnInsert: true }
         );
 
-        sendResponse(res, 200, true, 'System configuration updated', config);
+        return successResponse(res, 'System configuration updated successfully', config);
     } catch (error) {
         next(error);
     }

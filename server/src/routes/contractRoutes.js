@@ -4,7 +4,7 @@ const {
     getContracts,
     createContract,
     getContractDetail,
-    updateContractStatus, // <-- 1. WAJIB IMPORT INI (Fungsi baru)
+    updateContractStatus,
     makePayment,
     requestChange
 } = require('../controllers/contractController');
@@ -20,7 +20,6 @@ router.get('/:id', getContractDetail);
 // Write: Staff & Admin (Create Application)
 router.post('/', authorize('STAFF', 'ADMIN'), createContract);
 
-// --- UPDATE PENTING DI SINI ---
 // Approval Workflow: Admin & Superadmin Only
 // Ini menangani tombol "Approve" atau "Reject" dari Admin Action Bar di Frontend
 router.patch('/:id', authorize('ADMIN', 'SUPERADMIN'), updateContractStatus);

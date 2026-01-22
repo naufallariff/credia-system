@@ -1,13 +1,18 @@
 const notificationService = require('../services/notificationService');
-const { sendResponse } = require('../utils/response');
+const { successResponse } = require('../utils/response'); // Updated import
 
+/**
+ * Get User Notifications
+ * Retrieves notifications and calculates the unread count badge.
+ */
 const getMyNotifications = async (req, res, next) => {
     try {
         const notifications = await notificationService.getUserNotifications(req.user.id);
-        // Calculate unread count for badge UI
+
+        // Calculate unread count for UI badge
         const unreadCount = notifications.filter(n => !n.is_read).length;
-        
-        sendResponse(res, 200, true, 'Notifications retrieved', {
+
+        return successResponse(res, 'Notifications retrieved', {
             unread_count: unreadCount,
             list: notifications
         });
@@ -16,20 +21,30 @@ const getMyNotifications = async (req, res, next) => {
     }
 };
 
+/**
+ * Mark Notification as Read
+ * Updates a specific notification status.
+ */
 const markRead = async (req, res, next) => {
     try {
         const { id } = req.params;
         await notificationService.markAsRead(id, req.user.id);
-        sendResponse(res, 200, true, 'Notification marked as read');
+
+        return successResponse(res, 'Notification marked as read');
     } catch (error) {
         next(error);
     }
 };
 
+/**
+ * Mark All as Read
+ * Bulk update for user's notification inbox.
+ */
 const markAllRead = async (req, res, next) => {
     try {
         await notificationService.markAllAsRead(req.user.id);
-        sendResponse(res, 200, true, 'All notifications marked as read');
+
+        return successResponse(res, 'All notifications marked as read');
     } catch (error) {
         next(error);
     }

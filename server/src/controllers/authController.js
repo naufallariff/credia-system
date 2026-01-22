@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const { generateId } = require('../utils/idGenerator');
-const { sendResponse } = require('../utils/response');
+const { successResponse, errorResponse } = require('../utils/response'); // UPDATE: Import Wrapper
 const jwt = require('jsonwebtoken');
 
 /**
@@ -31,7 +31,7 @@ const register = async (req, res, next) => {
 
         const userExists = await User.findOne({ $or: [{ email }, { username }] });
         if (userExists) {
-            return sendResponse(res, 400, false, 'Username or Email already exists');
+            return errorResponse(res, 'Username or Email already exists', 400);
         }
 
         // Create as LEAD / UNVERIFIED
@@ -45,10 +45,11 @@ const register = async (req, res, next) => {
             status: 'UNVERIFIED'
         });
 
-        sendResponse(res, 201, true, 'Registration successful. Please wait for Admin verification.', {
+        return successResponse(res, 'Registration successful. Please wait for Admin verification.', {
             id: user.custom_id,
             status: user.status
-        });
+        }, 201);
+
     } catch (error) {
         next(error);
     }
@@ -62,10 +63,11 @@ const login = async (req, res, next) => {
     try {
         const { identifier, username, password } = req.body;
 
+        // Support both field names for flexibility
         const loginInput = identifier || username;
 
         if (!loginInput || !password) {
-            return sendResponse(res, 400, false, 'Please provide username/email and password');
+            return errorResponse(res, 'Please provide username/email and password', 400);
         }
 
         // Explicitly select password as it is hidden by default in the model
@@ -77,15 +79,15 @@ const login = async (req, res, next) => {
         }).select('+password');
 
         if (!user) {
-            return sendResponse(res, 401, false, 'Invalid credentials');
+            return errorResponse(res, 'Invalid credentials', 401);
         }
 
         // Security: Check Account Status
         if (user.status === 'UNVERIFIED') {
-            return sendResponse(res, 403, false, 'Account is pending verification.');
+            return errorResponse(res, 'Account is pending verification.', 403);
         }
         if (user.status === 'SUSPENDED' || user.status === 'BANNED') {
-            return sendResponse(res, 403, false, 'Account access has been suspended.');
+            return errorResponse(res, 'Account access has been suspended.', 403);
         }
 
         const isMatch = await user.matchPassword(password);
@@ -93,14 +95,14 @@ const login = async (req, res, next) => {
             // Security: Track failed login attempts
             user.login_attempts += 1;
             await user.save();
-            return sendResponse(res, 401, false, 'Invalid credentials');
+            return errorResponse(res, 'Invalid credentials', 401);
         }
 
         // Security: Force Password Change Check
         if (user.must_change_password) {
             const resetToken = generateResetToken(user._id);
 
-            return sendResponse(res, 200, true, 'Password change required', {
+            return successResponse(res, 'Password change required', {
                 require_password_change: true,
                 temp_token: resetToken, // This token can ONLY be used at /change-initial-password
                 message: 'Please set a new password to continue.'
@@ -114,7 +116,7 @@ const login = async (req, res, next) => {
 
         const token = generateToken(user._id, user.role);
 
-        sendResponse(res, 200, true, 'Login successful', {
+        return successResponse(res, 'Login successful', {
             token,
             user: {
                 id: user._id,
@@ -125,6 +127,7 @@ const login = async (req, res, next) => {
                 email: user.email
             }
         });
+
     } catch (error) {
         next(error);
     }
@@ -136,7 +139,7 @@ const login = async (req, res, next) => {
 const getMe = async (req, res, next) => {
     try {
         const user = await User.findById(req.user.id).select('-password').lean();
-        sendResponse(res, 200, true, 'User profile retrieved', user);
+        return successResponse(res, 'User profile retrieved', user);
     } catch (error) {
         next(error);
     }
@@ -154,7 +157,7 @@ const changeInitialPassword = async (req, res, next) => {
         const user = await User.findById(req.user.id);
 
         if (!user.must_change_password) {
-            return sendResponse(res, 400, false, 'Action not valid. Account is already set up.');
+            return errorResponse(res, 'Action not valid. Account is already set up.', 400);
         }
 
         // Update Password (Hashing is handled by Pre-Save hook in Model)
@@ -165,7 +168,7 @@ const changeInitialPassword = async (req, res, next) => {
         // Generate a new Full Access Token so the user can enter the dashboard immediately
         const newToken = generateToken(user._id, user.role);
 
-        sendResponse(res, 200, true, 'Password updated successfully. Logging you in...', {
+        return successResponse(res, 'Password updated successfully. Logging you in...', {
             token: newToken,
             user: {
                 id: user._id,
@@ -173,6 +176,7 @@ const changeInitialPassword = async (req, res, next) => {
                 role: user.role
             }
         });
+
     } catch (error) {
         next(error);
     }
